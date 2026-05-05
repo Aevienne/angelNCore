@@ -1,6 +1,6 @@
 # angelNCore
 
-A Minecraft 1.21 plugin that adds a **supply and demand economy** to your server. Item prices shift dynamically based on player activity — buying drives prices up, selling drives them down, and prices slowly recover over time.
+A Minecraft 1.21 plugin that adds a **supply and demand economy** to your server. Item prices shift dynamically based on player activity buying drives prices up, selling drives them down, and prices slowly recover over time.
 
 ---
 
