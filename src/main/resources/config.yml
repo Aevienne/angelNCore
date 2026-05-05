@@ -1,0 +1,43 @@
+economy:
+  starting-balance: 500.0
+  currency-symbol: "$"
+  currency-name: "Coins"
+
+shop:
+  price-change-rate: 0.05
+  min-price-multiplier: 0.2
+  max-price-multiplier: 5.0
+  price-decay-rate: 0.01
+  price-decay-interval: 60
+
+items:
+  DIAMOND:
+    base-price: 100.0
+    display-name: "Diamond"
+  IRON_INGOT:
+    base-price: 10.0
+    display-name: "Iron Ingot"
+  GOLD_INGOT:
+    base-price: 25.0
+    display-name: "Gold Ingot"
+  COAL:
+    base-price: 3.0
+    display-name: "Coal"
+  OAK_LOG:
+    base-price: 2.0
+    display-name: "Oak Log"
+  WHEAT:
+    base-price: 1.5
+    display-name: "Wheat"
+  EMERALD:
+    base-price: 150.0
+    display-name: "Emerald"
+  NETHERITE_INGOT:
+    base-price: 500.0
+    display-name: "Netherite Ingot"
+  COOKED_BEEF:
+    base-price: 5.0
+    display-name: "Cooked Beef"
+  BREAD:
+    base-price: 4.0
+    display-name: "Bread"
