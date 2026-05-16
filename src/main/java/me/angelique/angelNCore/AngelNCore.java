@@ -6,7 +6,10 @@ import me.angelique.angelNCore.commands.ShopCommand;
 import me.angelique.angelNCore.database.DatabaseManager;
 import me.angelique.angelNCore.economy.EconomyManager;
 import me.angelique.angelNCore.economy.MarketManager;
+import me.angelique.angelNCore.events.EventBus;
 import me.angelique.angelNCore.listeners.PlayerJoinListener;
+import me.angelique.angelNCore.services.*;
+import me.angelique.angelNCore.services.impl.*;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class AngelNCore extends JavaPlugin {
@@ -15,14 +18,24 @@ public class AngelNCore extends JavaPlugin {
     private DatabaseManager databaseManager;
     private EconomyManager economyManager;
     private MarketManager marketManager;
+    private EventBus eventBus;
 
     @Override
     public void onEnable() {
         instance = this;
         saveDefaultConfig();
 
+        eventBus = new EventBus();
+
         databaseManager = new DatabaseManager(this);
         databaseManager.initialize();
+
+        // Register core services
+        ServiceRegistry.register(new MarketServiceImpl());
+        ServiceRegistry.register(new CompanyServiceImpl());
+        ServiceRegistry.register(new LogisticsServiceImpl());
+        ServiceRegistry.register(new MilitaryServiceImpl());
+        ServiceRegistry.register(new NutritionServiceImpl());
 
         economyManager = new EconomyManager(this);
         marketManager = new MarketManager(this);
@@ -58,5 +71,9 @@ public class AngelNCore extends JavaPlugin {
 
     public MarketManager getMarketManager() {
         return marketManager;
+    }
+
+    public EventBus getEventBus() {
+        return eventBus;
     }
 }
