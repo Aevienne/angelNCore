@@ -17,6 +17,10 @@ commands:
     description: Admin economy commands
     usage: /eco [give|take|set] [player] [amount]
     permission: economy.admin
+  war:
+    description: Declare or end wars
+    usage: /war <declare|end> [args]
+    permission: war.admin
 
 permissions:
   economy.admin:
@@ -25,3 +29,6 @@ permissions:
   economy.use:
     description: Access to shop and balance commands
     default: true
+  war.admin:
+    description: Access to war commands
+    default: op

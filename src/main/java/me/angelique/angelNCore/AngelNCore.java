@@ -3,6 +3,7 @@ package me.angelique.angelNCore;
 import me.angelique.angelNCore.commands.BalanceCommand;
 import me.angelique.angelNCore.commands.EcoCommand;
 import me.angelique.angelNCore.commands.ShopCommand;
+import me.angelique.angelNCore.commands.WarCommand;
 import me.angelique.angelNCore.database.DatabaseManager;
 import me.angelique.angelNCore.economy.EconomyManager;
 import me.angelique.angelNCore.economy.MarketManager;
@@ -43,6 +44,8 @@ public class AngelNCore extends JavaPlugin {
         getCommand("shop").setExecutor(new ShopCommand(this));
         getCommand("balance").setExecutor(new BalanceCommand(this));
         getCommand("eco").setExecutor(new EcoCommand(this));
+        getCommand("war").setExecutor(new WarCommand());
+        getCommand("war").setTabCompleter(new WarCommand());
 
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
 
