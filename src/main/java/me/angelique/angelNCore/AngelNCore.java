@@ -68,6 +68,7 @@ public class AngelNCore extends JavaPlugin {
         getServer().getPluginManager().registerEvents(stockListener, this);
 
         stockApi = new StockApiServer(this, stockExchange);
+        ((StockExchangeServiceImpl) stockExchange).setApiServer(stockApi);
         stockApi.start(getConfig().getInt("stock-api-port", 8080));
 
         marketManager.startDecayTask();

@@ -17,6 +17,7 @@ public class StockApiServer {
     private final AngelNCore plugin;
     private final StockExchangeService exchange;
     private HttpServer server;
+    private final List<HttpExchange> sseClients = new ArrayList<>();
 
     public StockApiServer(AngelNCore plugin, StockExchangeService exchange) {
         this.plugin = plugin;
@@ -35,6 +36,7 @@ public class StockApiServer {
             server.createContext("/price", this::handlePriceHistory);
             server.createContext("/", this::handleCors);
             server.createContext("/app", this::handleStatic);
+            server.createContext("/live", this::handleLive);
             server.setExecutor(null);
             server.start();
             plugin.getLogger().info("Stock API server started on port " + port);
@@ -128,6 +130,43 @@ public class StockApiServer {
         OutputStream os = ex.getResponseBody();
         os.write(bytes);
         os.close();
+    }
+
+    private void handleLive(HttpExchange ex) throws IOException {
+        addCors(ex);
+        ex.getResponseHeaders().set("Content-Type", "text/event-stream");
+        ex.getResponseHeaders().set("Cache-Control", "no-cache");
+        ex.getResponseHeaders().set("Connection", "keep-alive");
+        ex.sendResponseHeaders(200, 0);
+        OutputStream os = ex.getResponseBody();
+        synchronized (sseClients) { sseClients.add(ex); }
+        // Keep alive: send ping every 15 seconds
+        new Thread(() -> {
+            try {
+                while (sseClients.contains(ex)) {
+                    os.write(":ping\n\n".getBytes(StandardCharsets.UTF_8));
+                    os.flush();
+                    Thread.sleep(15000);
+                }
+            } catch (Exception ignored) {}
+        }).start();
+    }
+
+    public void broadcastPrice(String companyId, double price) {
+        String data = "data: {\"company\":\"" + companyId + "\",\"price\":" + price + "}\n\n";
+        synchronized (sseClients) {
+            List<HttpExchange> dead = new ArrayList<>();
+            for (HttpExchange client : sseClients) {
+                try {
+                    OutputStream os = client.getResponseBody();
+                    os.write(data.getBytes(StandardCharsets.UTF_8));
+                    os.flush();
+                } catch (IOException e) {
+                    dead.add(client);
+                }
+            }
+            sseClients.removeAll(dead);
+        }
     }
 
     private void handleHoldings(HttpExchange ex) throws IOException {

@@ -1,6 +1,7 @@
 package me.angelique.angelNCore.services.impl;
 
 import me.angelique.angelNCore.AngelNCore;
+import me.angelique.angelNCore.api.StockApiServer;
 import me.angelique.angelNCore.services.StockExchangeService;
 
 import java.sql.*;
@@ -11,10 +12,13 @@ public class StockExchangeServiceImpl implements StockExchangeService {
 
     private final AngelNCore plugin;
     private final List<PriceCandle> recentCandles = new CopyOnWriteArrayList<>();
+    private StockApiServer apiServer;
 
     public StockExchangeServiceImpl(AngelNCore plugin) {
         this.plugin = plugin;
     }
+
+    public void setApiServer(StockApiServer server) { this.apiServer = server; }
 
     private Connection conn() throws SQLException {
         return plugin.getDatabaseManager().getConnection();
@@ -233,6 +237,8 @@ public class StockExchangeServiceImpl implements StockExchangeService {
 
             conn().commit();
             conn().setAutoCommit(true);
+
+            if (apiServer != null) apiServer.broadcastPrice(companyId, price);
 
             try (PreparedStatement ps = conn().prepareStatement(
                     "INSERT INTO stock_price_history (company_id, timestamp, open, high, low, close, volume) VALUES (?,?,?,?,?,?,?)")) {
