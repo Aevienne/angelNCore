@@ -114,9 +114,15 @@ public class StockApiServer {
 
     private void handleStatic(HttpExchange ex) throws IOException {
         addCors(ex);
-        String path = ex.getRequestURI().getPath().replace("/app/", "index.html");
-        if (path.equals("/app")) path = "index.html";
-        else path = path.substring(1); // remove leading slash from /app/filename
+        String rawPath = ex.getRequestURI().getPath();
+        String path;
+        if (rawPath.equals("/app") || rawPath.equals("/app/")) {
+            path = "index.html";
+        } else if (rawPath.startsWith("/app/")) {
+            path = rawPath.substring(5); // remove "/app/"
+        } else {
+            path = "index.html";
+        }
         File webDir = new File(plugin.getDataFolder(), "web");
         File file = new File(webDir, path);
         if (!file.exists()) {
