@@ -12,6 +12,7 @@ import me.angelique.angelNCore.economy.MarketManager;
 import me.angelique.angelNCore.events.EventBus;
 import me.angelique.angelNCore.listeners.PlayerJoinListener;
 import me.angelique.angelNCore.listeners.StockEventListener;
+import me.angelique.angelNCore.listeners.MilitaryDietListener;
 import me.angelique.angelNCore.services.*;
 import me.angelique.angelNCore.services.impl.*;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -66,6 +67,7 @@ public class AngelNCore extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
         getServer().getPluginManager().registerEvents(stockListener, this);
+        getServer().getPluginManager().registerEvents(new MilitaryDietListener(), this);
 
         stockApi = new StockApiServer(this, stockExchange);
         ((StockExchangeServiceImpl) stockExchange).setApiServer(stockApi);

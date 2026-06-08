@@ -6,6 +6,7 @@ import java.util.*;
 public class MilitaryServiceImpl implements MilitaryService {
     private final Map<String, WarData> wars = new HashMap<>();
     private final Map<Long, FactoryData> factories = new HashMap<>();
+    private final Map<String, Double> factionDietBuffs = new HashMap<>();
 
     @Override
     public String declareWar(String attacker, String defender) {
@@ -50,6 +51,16 @@ public class MilitaryServiceImpl implements MilitaryService {
         if (factory != null) {
             factory.damage = Math.max(0, factory.damage - repairAmount);
         }
+    }
+
+    @Override
+    public void setDietBuff(String factionId, double modifier) {
+        factionDietBuffs.put(factionId, modifier);
+    }
+
+    @Override
+    public double getDietBuff(String factionId) {
+        return factionDietBuffs.getOrDefault(factionId, 1.0);
     }
 
     private static class WarData {

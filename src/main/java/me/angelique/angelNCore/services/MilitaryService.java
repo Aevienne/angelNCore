@@ -8,4 +8,6 @@ public interface MilitaryService {
     void registerFactory(long factoryId, String ownerCompanyId);
     void damageFactory(long factoryId, int damage);
     void repairFactory(long factoryId, int repairAmount);
+    void setDietBuff(String factionId, double modifier);
+    double getDietBuff(String factionId);
 }
