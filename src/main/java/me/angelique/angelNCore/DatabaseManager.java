@@ -125,6 +125,16 @@ public class DatabaseManager {
             try { stmt.execute("ALTER TABLE listed_companies ADD COLUMN damage_factor REAL NOT NULL DEFAULT 1.0"); } catch (SQLException ignored) {}
             try { stmt.execute("ALTER TABLE listed_companies ADD COLUMN war_factor REAL NOT NULL DEFAULT 1.0"); } catch (SQLException ignored) {}
             try { stmt.execute("ALTER TABLE listed_companies ADD COLUMN logistics_factor REAL NOT NULL DEFAULT 1.0"); } catch (SQLException ignored) {}
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS land_claims (
+                    world TEXT NOT NULL,
+                    chunk_x INTEGER NOT NULL,
+                    chunk_z INTEGER NOT NULL,
+                    owner_uuid TEXT NOT NULL,
+                    region_type TEXT NOT NULL DEFAULT 'DEFAULT',
+                    PRIMARY KEY (world, chunk_x, chunk_z)
+                )
+            """);
         }
     }
 

@@ -2,6 +2,7 @@ package me.angelique.angelNCore;
 
 import me.angelique.angelNCore.api.StockApiServer;
 import me.angelique.angelNCore.commands.BalanceCommand;
+import me.angelique.angelNCore.commands.ClaimCommand;
 import me.angelique.angelNCore.commands.BankCommand;
 import me.angelique.angelNCore.commands.EcoCommand;
 import me.angelique.angelNCore.commands.ShopCommand;
@@ -14,6 +15,7 @@ import me.angelique.angelNCore.listeners.PlayerJoinListener;
 import me.angelique.angelNCore.listeners.StockEventListener;
 import me.angelique.angelNCore.listeners.MilitaryDietListener;
 import me.angelique.angelNCore.services.*;
+import me.angelique.angelNCore.services.impl.*;
 import me.angelique.angelNCore.services.impl.*;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -57,6 +59,9 @@ public class AngelNCore extends JavaPlugin {
         bankService = new BankServiceImpl(this);
         ServiceRegistry.register(bankService);
 
+        RegionService regionService = new RegionServiceImpl(this);
+        ServiceRegistry.register(regionService);
+
         getCommand("shop").setExecutor(new ShopCommand(this));
         getCommand("balance").setExecutor(new BalanceCommand(this));
         getCommand("eco").setExecutor(new EcoCommand(this));
@@ -64,6 +69,8 @@ public class AngelNCore extends JavaPlugin {
         getCommand("war").setTabCompleter(new WarCommand());
         getCommand("bank").setExecutor(new BankCommand(this));
         getCommand("bank").setTabCompleter(new BankCommand(this));
+        getCommand("claim").setExecutor(new ClaimCommand(this));
+        getCommand("claim").setTabCompleter(new ClaimCommand(this));
 
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
         getServer().getPluginManager().registerEvents(stockListener, this);
