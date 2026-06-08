@@ -23,7 +23,7 @@ public class StockExchangeServiceImpl implements StockExchangeService {
     @Override
     public void listCompany(String companyId, int totalShares, double initialPrice) {
         try (PreparedStatement ps = conn().prepareStatement(
-                "INSERT OR REPLACE INTO listed_companies (company_id, total_shares, current_price, listed_at) VALUES (?, ?, ?, ?)")) {
+                "INSERT OR REPLACE INTO listed_companies (company_id, total_shares, current_price, listed_at, damage_factor, war_factor, logistics_factor) VALUES (?, ?, ?, ?, 1.0, 1.0, 1.0)")) {
             ps.setString(1, companyId);
             ps.setInt(2, totalShares);
             ps.setDouble(3, initialPrice);
@@ -47,14 +47,17 @@ public class StockExchangeServiceImpl implements StockExchangeService {
     @Override
     public CompanyInfo getCompanyInfo(String companyId) {
         try (PreparedStatement ps = conn().prepareStatement(
-                "SELECT l.company_id, c.name, l.total_shares, l.current_price, " +
-                "(SELECT COALESCE(SUM(CASE WHEN type='buy' AND status='filled' THEN shares ELSE 0 END),0) FROM stock_orders WHERE company_id=?), " +
-                "l.total_shares FROM listed_companies l LEFT JOIN players p ON p.uuid=l.company_id WHERE l.company_id=?")) {
-            ps.setString(1, companyId);
+                "SELECT l.company_id, l.total_shares, l.current_price, l.damage_factor, l.war_factor, l.logistics_factor, " +
+                "COALESCE((SELECT SUM(r.revenue) FROM company_revenue r WHERE r.company_id=l.company_id AND r.date >= ?),0) " +
+                "FROM listed_companies l WHERE l.company_id=?")) {
+            ps.setString(1, java.time.LocalDate.now().minusDays(7).toString());
             ps.setString(2, companyId);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
-                return new CompanyInfo(rs.getString(1), "Company " + companyId.substring(0, 8), rs.getInt(3), rs.getDouble(4), rs.getInt(5));
+                double baseVal = rs.getDouble(7) / 100.0; // revenue / 100 = base share price
+                double effectivePrice = baseVal * rs.getDouble(4) * rs.getDouble(5) * rs.getDouble(6);
+                if (effectivePrice <= 0) effectivePrice = rs.getDouble(3); // fallback to last matched price
+                return new CompanyInfo(rs.getString(1), "Company " + companyId.substring(0, 8), rs.getInt(2), effectivePrice, 0);
             }
         } catch (SQLException e) {
             plugin.getLogger().warning("getCompanyInfo: " + e.getMessage());
@@ -65,11 +68,21 @@ public class StockExchangeServiceImpl implements StockExchangeService {
     @Override
     public List<CompanyInfo> listCompanies() {
         List<CompanyInfo> list = new ArrayList<>();
+        String sevenDaysAgo = java.time.LocalDate.now().minusDays(7).toString();
         try (Statement stmt = conn().createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT company_id, total_shares, current_price FROM listed_companies")) {
+             ResultSet rs = stmt.executeQuery("SELECT company_id, total_shares, current_price, damage_factor, war_factor, logistics_factor FROM listed_companies")) {
             while (rs.next()) {
                 String cid = rs.getString(1);
-                list.add(new CompanyInfo(cid, "Company " + cid.substring(0, 8), rs.getInt(2), rs.getDouble(3), 0));
+                double baseVal = 0;
+                try (PreparedStatement ps = conn().prepareStatement("SELECT COALESCE(SUM(revenue),0) FROM company_revenue WHERE company_id=? AND date >= ?")) {
+                    ps.setString(1, cid);
+                    ps.setString(2, sevenDaysAgo);
+                    ResultSet rs2 = ps.executeQuery();
+                    if (rs2.next()) baseVal = rs2.getDouble(1) / 100.0;
+                }
+                double effectivePrice = baseVal * rs.getDouble(4) * rs.getDouble(5) * rs.getDouble(6);
+                if (effectivePrice <= 0) effectivePrice = rs.getDouble(3);
+                list.add(new CompanyInfo(cid, "Company " + cid.substring(0, 8), rs.getInt(2), effectivePrice, 0));
             }
         } catch (SQLException e) {
             plugin.getLogger().warning("listCompanies: " + e.getMessage());
@@ -284,7 +297,7 @@ public class StockExchangeServiceImpl implements StockExchangeService {
 
     @Override
     public void applyDamageModifier(String companyId, double factor) {
-        try (PreparedStatement ps = conn().prepareStatement("UPDATE listed_companies SET current_price=current_price*? WHERE company_id=?")) {
+        try (PreparedStatement ps = conn().prepareStatement("UPDATE listed_companies SET damage_factor=damage_factor*? WHERE company_id=?")) {
             ps.setDouble(1, factor);
             ps.setString(2, companyId);
             ps.executeUpdate();
@@ -295,6 +308,22 @@ public class StockExchangeServiceImpl implements StockExchangeService {
 
     @Override
     public void applyWarModifier(String companyId, double factor) {
-        applyDamageModifier(companyId, factor);
+        try (PreparedStatement ps = conn().prepareStatement("UPDATE listed_companies SET war_factor=war_factor*? WHERE company_id=?")) {
+            ps.setDouble(1, factor);
+            ps.setString(2, companyId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            plugin.getLogger().warning("applyWarModifier: " + e.getMessage());
+        }
+    }
+
+    public void applyLogisticsModifier(String companyId, double factor) {
+        try (PreparedStatement ps = conn().prepareStatement("UPDATE listed_companies SET logistics_factor=logistics_factor*? WHERE company_id=?")) {
+            ps.setDouble(1, factor);
+            ps.setString(2, companyId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            plugin.getLogger().warning("applyLogisticsModifier: " + e.getMessage());
+        }
     }
 }

@@ -21,6 +21,9 @@ commands:
     description: Declare or end wars
     usage: /war <declare|end> [args]
     permission: war.admin
+  bank:
+    description: Banking commands for loans and repayments
+    usage: /bank <loans|borrow|repay> [args]
 
 permissions:
   economy.admin:

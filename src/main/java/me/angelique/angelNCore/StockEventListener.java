@@ -1,9 +1,15 @@
 package me.angelique.angelNCore.listeners;
 
 import me.angelique.angelNCore.events.*;
+import me.angelique.angelNCore.services.BankService;
 import me.angelique.angelNCore.services.StockExchangeService;
+import me.angelique.angelNCore.services.CompanyService;
+import me.angelique.angelNCore.services.impl.StockExchangeServiceImpl;
+import me.angelique.angelNCore.services.impl.CompanyServiceImpl;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+
+import java.util.UUID;
 
 public class StockEventListener implements Listener {
 
@@ -16,7 +22,7 @@ public class StockEventListener implements Listener {
     @EventHandler
     public void onItemProduced(ItemProducedEvent event) {
         if (event.getCompanyId() != null && !event.getCompanyId().isBlank()) {
-            double revenue = event.getQuantity() * 10.0; // base valuation per item
+            double revenue = event.getQuantity() * 10.0;
             exchange.recordRevenue(event.getCompanyId(), revenue);
         }
     }
@@ -39,5 +45,23 @@ public class StockEventListener implements Listener {
     public void onWarDeclared(WarDeclaredEvent event) {
         exchange.applyWarModifier(event.getAttacker(), 0.90);
         exchange.applyWarModifier(event.getDefender(), 0.90);
+    }
+
+    @EventHandler
+    public void onTradeCompleted(TradeCompletedEvent event) {
+        if (event.getSeller() != null) applyLogisticsBonus(event.getSeller(), 1.01);
+    }
+
+    private void applyLogisticsBonus(String ownerStr, double factor) {
+        if (exchange instanceof StockExchangeServiceImpl se) {
+            try {
+                UUID uid = UUID.fromString(ownerStr);
+                CompanyService cs = me.angelique.angelNCore.services.ServiceRegistry.getCompanyService();
+                if (cs instanceof CompanyServiceImpl csi) {
+                    String companyId = csi.getCompanyForPlayer(uid);
+                    if (companyId != null) se.applyLogisticsModifier(companyId, factor);
+                }
+            } catch (IllegalArgumentException ignored) {}
+        }
     }
 }

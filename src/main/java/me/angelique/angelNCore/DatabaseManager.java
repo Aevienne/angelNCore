@@ -121,6 +121,10 @@ public class DatabaseManager {
                     status TEXT NOT NULL DEFAULT 'active'
                 )
             """);
+            // Add valuation columns if not present (safe for existing DBs)
+            try { stmt.execute("ALTER TABLE listed_companies ADD COLUMN damage_factor REAL NOT NULL DEFAULT 1.0"); } catch (SQLException ignored) {}
+            try { stmt.execute("ALTER TABLE listed_companies ADD COLUMN war_factor REAL NOT NULL DEFAULT 1.0"); } catch (SQLException ignored) {}
+            try { stmt.execute("ALTER TABLE listed_companies ADD COLUMN logistics_factor REAL NOT NULL DEFAULT 1.0"); } catch (SQLException ignored) {}
         }
     }
 
