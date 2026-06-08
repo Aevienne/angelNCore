@@ -61,6 +61,54 @@ public class DatabaseManager {
                     timestamp LONG NOT NULL
                 )
             """);
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS listed_companies (
+                    company_id TEXT PRIMARY KEY,
+                    total_shares INTEGER NOT NULL DEFAULT 0,
+                    current_price REAL NOT NULL DEFAULT 0,
+                    listed_at LONG NOT NULL
+                )
+            """);
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS stock_orders (
+                    order_id TEXT PRIMARY KEY,
+                    company_id TEXT NOT NULL,
+                    player_uuid TEXT NOT NULL,
+                    type TEXT NOT NULL,
+                    shares INTEGER NOT NULL,
+                    price REAL NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'open',
+                    placed_at LONG NOT NULL
+                )
+            """);
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS stock_holdings (
+                    player_uuid TEXT NOT NULL,
+                    company_id TEXT NOT NULL,
+                    shares INTEGER NOT NULL DEFAULT 0,
+                    PRIMARY KEY (player_uuid, company_id)
+                )
+            """);
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS stock_price_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    company_id TEXT NOT NULL,
+                    timestamp LONG NOT NULL,
+                    open REAL NOT NULL,
+                    high REAL NOT NULL,
+                    low REAL NOT NULL,
+                    close REAL NOT NULL,
+                    volume INTEGER NOT NULL DEFAULT 0
+                )
+            """);
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS company_revenue (
+                    company_id TEXT NOT NULL,
+                    date TEXT NOT NULL,
+                    revenue REAL NOT NULL DEFAULT 0,
+                    PRIMARY KEY (company_id, date)
+                )
+            """);
         }
     }
 
