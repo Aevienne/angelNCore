@@ -2,6 +2,7 @@ package me.angelique.angelNCore;
 
 import me.angelique.angelNCore.api.StockApiServer;
 import me.angelique.angelNCore.commands.BalanceCommand;
+import me.angelique.angelNCore.commands.RegionCommand;
 import me.angelique.angelNCore.commands.ClaimCommand;
 import me.angelique.angelNCore.commands.BankCommand;
 import me.angelique.angelNCore.commands.EcoCommand;
@@ -71,6 +72,8 @@ public class AngelNCore extends JavaPlugin {
         getCommand("bank").setTabCompleter(new BankCommand(this));
         getCommand("claim").setExecutor(new ClaimCommand(this));
         getCommand("claim").setTabCompleter(new ClaimCommand(this));
+        getCommand("region").setExecutor(new RegionCommand());
+        getCommand("region").setTabCompleter(new RegionCommand());
 
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
         getServer().getPluginManager().registerEvents(stockListener, this);
