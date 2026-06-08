@@ -109,6 +109,18 @@ public class DatabaseManager {
                     PRIMARY KEY (company_id, date)
                 )
             """);
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS loans (
+                    loan_id TEXT PRIMARY KEY,
+                    borrower_uuid TEXT NOT NULL,
+                    amount REAL NOT NULL,
+                    remaining REAL NOT NULL,
+                    rate REAL NOT NULL,
+                    issued_at LONG NOT NULL,
+                    due_at LONG NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'active'
+                )
+            """);
         }
     }
 

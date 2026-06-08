@@ -2,6 +2,7 @@ package me.angelique.angelNCore;
 
 import me.angelique.angelNCore.api.StockApiServer;
 import me.angelique.angelNCore.commands.BalanceCommand;
+import me.angelique.angelNCore.commands.BankCommand;
 import me.angelique.angelNCore.commands.EcoCommand;
 import me.angelique.angelNCore.commands.ShopCommand;
 import me.angelique.angelNCore.commands.WarCommand;
@@ -15,6 +16,8 @@ import me.angelique.angelNCore.services.*;
 import me.angelique.angelNCore.services.impl.*;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.List;
+
 public class AngelNCore extends JavaPlugin {
 
     private static AngelNCore instance;
@@ -23,6 +26,7 @@ public class AngelNCore extends JavaPlugin {
     private MarketManager marketManager;
     private EventBus eventBus;
     private StockExchangeService stockExchange;
+    private BankService bankService;
     private StockApiServer stockApi;
 
     @Override
@@ -49,11 +53,16 @@ public class AngelNCore extends JavaPlugin {
         ServiceRegistry.register(stockExchange);
         StockEventListener stockListener = new StockEventListener(stockExchange);
 
+        bankService = new BankServiceImpl(this);
+        ServiceRegistry.register(bankService);
+
         getCommand("shop").setExecutor(new ShopCommand(this));
         getCommand("balance").setExecutor(new BalanceCommand(this));
         getCommand("eco").setExecutor(new EcoCommand(this));
         getCommand("war").setExecutor(new WarCommand());
         getCommand("war").setTabCompleter(new WarCommand());
+        getCommand("bank").setExecutor(new BankCommand(this));
+        getCommand("bank").setTabCompleter(new BankCommand(this));
 
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
         getServer().getPluginManager().registerEvents(stockListener, this);
@@ -62,6 +71,14 @@ public class AngelNCore extends JavaPlugin {
         stockApi.start(getConfig().getInt("stock-api-port", 8080));
 
         marketManager.startDecayTask();
+
+        // Daily interest & bankruptcy tick (every hour)
+        getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
+            List<BankService.LoanInfo> overdue = bankService.getDefaultedLoans();
+            for (BankService.LoanInfo l : overdue) {
+                bankService.processInterest(l.loanId());
+            }
+        }, 72000L, 72000L);
 
         getLogger().info("angelNCore economy enabled!");
     }

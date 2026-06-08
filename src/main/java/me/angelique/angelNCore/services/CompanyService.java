@@ -12,4 +12,7 @@ public interface CompanyService {
     void updateBalance(String companyId, double delta);
     String getOwner(String companyId);
     boolean exists(String companyId);
+
+    /** Returns the company ID the given player belongs to, or null if they have none. */
+    String getCompanyForPlayer(UUID playerId);
 }

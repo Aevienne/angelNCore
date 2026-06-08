@@ -7,6 +7,7 @@ public class ServiceRegistry {
     private static MilitaryService militaryService;
     private static NutritionService nutritionService;
     private static StockExchangeService stockExchangeService;
+    private static BankService bankService;
 
     public static void register(MarketService service) {
         marketService = service;
@@ -32,6 +33,10 @@ public class ServiceRegistry {
         stockExchangeService = service;
     }
 
+    public static void register(BankService service) {
+        bankService = service;
+    }
+
     public static MarketService getMarketService() {
         return marketService;
     }
@@ -54,5 +59,9 @@ public class ServiceRegistry {
 
     public static StockExchangeService getStockExchangeService() {
         return stockExchangeService;
+    }
+
+    public static BankService getBankService() {
+        return bankService;
     }
 }

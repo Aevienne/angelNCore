@@ -60,6 +60,16 @@ public class CompanyServiceImpl implements CompanyService {
         return companies.containsKey(companyId);
     }
 
+    @Override
+    public String getCompanyForPlayer(UUID playerId) {
+        for (Map.Entry<String, CompanyData> entry : companies.entrySet()) {
+            if (entry.getValue().members.contains(playerId)) {
+                return entry.getKey();
+            }
+        }
+        return null;
+    }
+
     private static class CompanyData {
         String name;
         UUID founder;
