@@ -16,7 +16,7 @@ import java.util.*;
 public class TerritoryListener implements Listener {
 
     private final AngelNCore plugin;
-    private final Map<UUID, String> playerChunkKey = new HashMap<>();
+    private final Map<UUID, UUID> playerLastOwner = new HashMap<>();
 
     public TerritoryListener(AngelNCore plugin) {
         this.plugin = plugin;
@@ -24,32 +24,32 @@ public class TerritoryListener implements Listener {
 
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
-        Chunk from = event.getFrom().getChunk();
         Chunk to = event.getTo().getChunk();
+        Chunk from = event.getFrom().getChunk();
         if (from.getX() == to.getX() && from.getZ() == to.getZ()) return;
 
         Player player = event.getPlayer();
         UUID pid = player.getUniqueId();
         String world = to.getWorld().getName();
-        int cx = to.getX(), cz = to.getZ();
-        String key = world + ":" + cx + "," + cz;
-
-        if (key.equals(playerChunkKey.get(pid))) return;
-        playerChunkKey.put(pid, key);
 
         RegionService rs = ServiceRegistry.getRegionService();
-        UUID owner = rs != null ? rs.getChunkOwner(world, cx, cz) : null;
+        UUID owner = rs != null ? rs.getChunkOwner(world, to.getX(), to.getZ()) : null;
+        UUID lastOwner = playerLastOwner.get(pid);
+
+        // Only notify when owner changes (including to/from null)
+        if (Objects.equals(owner, lastOwner)) return;
+        playerLastOwner.put(pid, owner);
 
         if (owner == null) {
             player.showTitle(Title.title(
                 Component.text("§7Wilderness"),
-                Component.text("§8Chunk " + cx + ", " + cz),
+                Component.text("§8Unclaimed territory"),
                 Title.Times.times(java.time.Duration.ofMillis(200), java.time.Duration.ofMillis(1200), java.time.Duration.ofMillis(400))
             ));
         } else if (owner.equals(pid)) {
             player.showTitle(Title.title(
                 Component.text("§aYour Territory"),
-                Component.text("§7Chunk " + cx + ", " + cz),
+                Component.text("§8Welcome home"),
                 Title.Times.times(java.time.Duration.ofMillis(200), java.time.Duration.ofMillis(1200), java.time.Duration.ofMillis(400))
             ));
         } else {
@@ -57,10 +57,9 @@ public class TerritoryListener implements Listener {
             String name = op.getName() != null ? op.getName() : owner.toString().substring(0, 8);
             player.showTitle(Title.title(
                 Component.text("§c" + name + "'s Territory"),
-                Component.text("§7Chunk " + cx + ", " + cz),
+                Component.text("§8Entering claimed land"),
                 Title.Times.times(java.time.Duration.ofMillis(200), java.time.Duration.ofMillis(1800), java.time.Duration.ofMillis(400))
             ));
-            // Show corner particles for foreign territory
             showChunkCorners(player, to);
         }
     }

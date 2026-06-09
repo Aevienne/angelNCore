@@ -13,6 +13,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.*;
@@ -57,6 +59,12 @@ public class MenuListener implements Listener {
             event.setCancelled(true);
             handleTutorialClick(player, event);
         }
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        TutorialGui.cleanupDummy(event.getPlayer());
+        TutorialGui.tutorialStep.remove(event.getPlayer().getUniqueId());
     }
 
     private void handleHubClick(Player player, int slot) {
@@ -230,10 +238,13 @@ public class MenuListener implements Listener {
         UUID id = player.getUniqueId();
         int step = TutorialGui.tutorialStep.getOrDefault(id, 0);
         int slot = event.getSlot();
+        String[] data = TutorialGui.STEPS[step];
+        String actionType = data[data.length - 1];
 
-        if (slot == 40) { TutorialGui.tutorialStep.remove(id); player.closeInventory(); return; }
+        if (slot == 40) { TutorialGui.tutorialStep.remove(id); TutorialGui.cleanupDummy(player); player.closeInventory(); return; }
         if (slot == 36) { TutorialGui.open(player, step - 1); return; }
         if (slot == 44) { TutorialGui.open(player, step + 1); return; }
+        if (slot == 31) { TutorialGui.doAction(player, actionType); return; }
     }
 
     // --- Shop ---
