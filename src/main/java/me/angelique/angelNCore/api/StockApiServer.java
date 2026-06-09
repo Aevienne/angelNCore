@@ -9,6 +9,7 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -18,10 +19,12 @@ public class StockApiServer {
     private final StockExchangeService exchange;
     private HttpServer server;
     private final List<HttpExchange> sseClients = new ArrayList<>();
+    private String apiToken;
 
     public StockApiServer(AngelNCore plugin, StockExchangeService exchange) {
         this.plugin = plugin;
         this.exchange = exchange;
+        this.apiToken = plugin.getConfig().getString("stock-api-token", "");
     }
 
     public void start(int port) {
@@ -34,6 +37,9 @@ public class StockApiServer {
             server.createContext("/orders/cancel", this::handleCancelOrder);
             server.createContext("/holdings", this::handleHoldings);
             server.createContext("/price", this::handlePriceHistory);
+            server.createContext("/admin", this::handleAdmin);
+            server.createContext("/auth", this::handleAuth);
+            server.createContext("/balance", this::handleBalance);
             server.createContext("/", this::handleCors);
             server.createContext("/app", this::handleStatic);
             server.createContext("/live", this::handleLive);
@@ -60,36 +66,60 @@ public class StockApiServer {
     }
 
     private void handleCompanies(HttpExchange ex) throws IOException {
-        addCors(ex);
-        String path = ex.getRequestURI().getPath();
-        String[] parts = path.split("/");
-        if (parts.length > 2) {
-            String cid = parts[2];
-            StockExchangeService.CompanyInfo info = exchange.getCompanyInfo(cid);
-            sendJson(ex, 200, toJson(info));
-        } else {
-            List<StockExchangeService.CompanyInfo> list = exchange.listCompanies();
-            String json = "[" + list.stream().map(this::toJson).collect(Collectors.joining(",")) + "]";
-            sendJson(ex, 200, json);
+        if (handleCorsPreflight(ex)) return;
+if (handleCorsPreflight(ex)) return;
+    addCors(ex);
+    try {
+            String path = ex.getRequestURI().getPath();
+            String[] parts = path.split("/");
+            if (parts.length > 2) {
+                String cid = parts[2];
+                StockExchangeService.CompanyInfo info = exchange.getCompanyInfo(cid);
+                sendJson(ex, 200, toJson(info));
+            } else {
+                List<StockExchangeService.CompanyInfo> list = exchange.listCompanies();
+                String json = "[" + list.stream().map(this::toJson).collect(Collectors.joining(",")) + "]";
+                sendJson(ex, 200, json);
+            }
+        } catch (Exception e) {
+            sendJson(ex, 500, "{\"error\":\"" + e.getMessage() + "\"}");
         }
     }
 
     private void handleBuy(HttpExchange ex) throws IOException {
+        if (handleCorsPreflight(ex)) return;
+        if (requireAuth(ex)) return;
         addCors(ex);
         if (!"POST".equals(ex.getRequestMethod())) { sendJson(ex, 405, "{}"); return; }
         Map<String, String> params = parseBody(ex);
+        String company = params.getOrDefault("company", "");
+        int shares = Integer.parseInt(params.getOrDefault("shares", "0"));
+        double price = Double.parseDouble(params.getOrDefault("price", "0"));
+        if (company.isEmpty() || shares <= 0 || price <= 0) {
+            sendJson(ex, 400, "{\"error\":\"company, shares, and price required\"}");
+            return;
+        }
         UUID player = UUID.fromString(params.getOrDefault("player", "00000000-0000-0000-0000-000000000000"));
-        exchange.placeOrder(player, params.get("company"), "buy", Integer.parseInt(params.get("shares")), Double.parseDouble(params.get("price")));
-        sendJson(ex, 200, "{\"status\":\"ok\"}");
+        String result = exchange.placeOrder(player, company, "buy", shares, price);
+        sendJson(ex, result.isEmpty() ? 400 : 200, result.isEmpty() ? "{\"error\":\"order failed\"}" : "{\"status\":\"ok\",\"orderId\":\"" + result + "\"}");
     }
 
     private void handleSell(HttpExchange ex) throws IOException {
+        if (handleCorsPreflight(ex)) return;
+        if (requireAuth(ex)) return;
         addCors(ex);
         if (!"POST".equals(ex.getRequestMethod())) { sendJson(ex, 405, "{}"); return; }
         Map<String, String> params = parseBody(ex);
+        String company = params.getOrDefault("company", "");
+        int shares = Integer.parseInt(params.getOrDefault("shares", "0"));
+        double price = Double.parseDouble(params.getOrDefault("price", "0"));
+        if (company.isEmpty() || shares <= 0 || price <= 0) {
+            sendJson(ex, 400, "{\"error\":\"company, shares, and price required\"}");
+            return;
+        }
         UUID player = UUID.fromString(params.getOrDefault("player", "00000000-0000-0000-0000-000000000000"));
-        exchange.placeOrder(player, params.get("company"), "sell", Integer.parseInt(params.get("shares")), Double.parseDouble(params.get("price")));
-        sendJson(ex, 200, "{\"status\":\"ok\"}");
+        String result = exchange.placeOrder(player, company, "sell", shares, price);
+        sendJson(ex, result.isEmpty() ? 400 : 200, result.isEmpty() ? "{\"error\":\"order failed\"}" : "{\"status\":\"ok\",\"orderId\":\"" + result + "\"}");
     }
 
     private void handleOrderBook(HttpExchange ex) throws IOException {
@@ -104,11 +134,13 @@ public class StockApiServer {
     }
 
     private void handleCancelOrder(HttpExchange ex) throws IOException {
+        if (handleCorsPreflight(ex)) return;
+        if (requireAuth(ex)) return;
         addCors(ex);
         if (!"POST".equals(ex.getRequestMethod())) { sendJson(ex, 405, "{}"); return; }
         Map<String, String> params = parseBody(ex);
         UUID player = UUID.fromString(params.getOrDefault("player", "00000000-0000-0000-0000-000000000000"));
-        boolean ok = exchange.cancelOrder(params.get("orderId"), player);
+        boolean ok = exchange.cancelOrder(params.getOrDefault("orderId", ""), player);
         sendJson(ex, 200, "{\"cancelled\":" + ok + "}");
     }
 
@@ -190,6 +222,8 @@ public class StockApiServer {
     }
 
     private void handlePriceHistory(HttpExchange ex) throws IOException {
+        if (handleCorsPreflight(ex)) return;
+        if (requireAuth(ex)) return;
         addCors(ex);
         String q = ex.getRequestURI().getQuery();
         String cid = q != null && q.contains("company=") ? q.split("company=")[1] : "";
@@ -198,6 +232,40 @@ public class StockApiServer {
             "{\"t\":" + c.timestamp() + ",\"o\":" + c.open() + ",\"h\":" + c.high() + ",\"l\":" + c.low() + ",\"c\":" + c.close() + ",\"v\":" + c.volume() + "}"
         ).collect(Collectors.joining(",")) + "]";
         sendJson(ex, 200, json);
+    }
+
+    private void handleAdmin(HttpExchange ex) throws IOException {
+        if (handleCorsPreflight(ex)) return;
+        if (requireAuth(ex)) return;
+        addCors(ex);
+        try (Statement stmt = plugin.getDatabaseManager().getConnection().createStatement()) {
+            int loans = 0, defaulted = 0, claims = 0, companies = 0;
+            long now = System.currentTimeMillis();
+            ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM loans WHERE status='active'");
+            if (rs.next()) loans = rs.getInt(1);
+            rs = stmt.executeQuery("SELECT COUNT(*) FROM loans WHERE status='active' AND due_at < " + now);
+            if (rs.next()) defaulted = rs.getInt(1);
+            rs = stmt.executeQuery("SELECT COUNT(*) FROM land_claims");
+            if (rs.next()) claims = rs.getInt(1);
+            rs = stmt.executeQuery("SELECT COUNT(*) FROM listed_companies");
+            if (rs.next()) companies = rs.getInt(1);
+            rs.close();
+            String json = "{\"loans\":" + loans + ",\"defaulted\":" + defaulted +
+                    ",\"claims\":" + claims + ",\"companies\":" + companies + "}";
+            sendJson(ex, 200, json);
+        } catch (Exception e) {
+            sendJson(ex, 500, "{\"error\":\"" + e.getMessage() + "\"}");
+        }
+    }
+
+    private void handleBalance(HttpExchange ex) throws IOException {
+        if (handleCorsPreflight(ex)) return;
+        addCors(ex);
+        String q = ex.getRequestURI().getQuery();
+        if (q == null || !q.contains("player=")) { sendJson(ex, 400, "{}"); return; }
+        String puid = q.split("player=")[1].split("&")[0];
+        double balance = plugin.getEconomyManager().getBalance(UUID.fromString(puid));
+        sendJson(ex, 200, "{\"balance\":" + balance + "}");
     }
 
     private void sendJson(HttpExchange ex, int code, String json) throws IOException {
@@ -213,8 +281,63 @@ public class StockApiServer {
         ex.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
         ex.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
         ex.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type");
+    }
+
+    private boolean handleCorsPreflight(HttpExchange ex) throws IOException {
         if ("OPTIONS".equals(ex.getRequestMethod())) {
-            try { ex.sendResponseHeaders(204, -1); } catch (IOException ignored) {}
+            addCors(ex);
+            ex.sendResponseHeaders(204, -1);
+            ex.close();
+            return true;
+        }
+        return false;
+    }
+
+    private boolean requireAuth(HttpExchange ex) throws IOException {
+        if (apiToken == null || apiToken.isEmpty()) return false;
+        String header = ex.getRequestHeaders().getFirst("X-API-Token");
+        // Check config token
+        if (apiToken.equals(header)) return false;
+        // Check web token
+        if (header != null) {
+            UUID validated = exchange.validateToken(header);
+            if (validated != null) return false;
+            // Also check as web token with query param
+        }
+        String query = ex.getRequestURI().getQuery();
+        if (query != null && query.contains("token=")) {
+            String queryToken = query.split("token=")[1].split("&")[0];
+            if (apiToken.equals(queryToken)) return false;
+            if (exchange.validateToken(queryToken) != null) return false;
+        }
+        sendJson(ex, 401, "{\"error\":\"unauthorized\"}");
+        return true;
+    }
+
+    private void handleAuth(HttpExchange ex) throws IOException {
+        if (handleCorsPreflight(ex)) return;
+        addCors(ex);
+        String q = ex.getRequestURI().getQuery();
+        if (q == null || !q.contains("uuid=") || !q.contains("token=")) {
+            sendJson(ex, 400, "{\"error\":\"uuid and token required\"}");
+            return;
+        }
+        String[] parts = q.split("&");
+        String uuidStr = "", token = "";
+        for (String p : parts) {
+            if (p.startsWith("uuid=")) uuidStr = p.substring(5);
+            if (p.startsWith("token=")) token = p.substring(6);
+        }
+        try {
+            UUID uid = UUID.fromString(uuidStr);
+            UUID validated = exchange.validateToken(token);
+            if (validated != null && validated.equals(uid)) {
+                sendJson(ex, 200, "{\"status\":\"ok\",\"player\":\"" + uid + "\"}");
+            } else {
+                sendJson(ex, 401, "{\"error\":\"invalid token\"}");
+            }
+        } catch (IllegalArgumentException e) {
+            sendJson(ex, 400, "{\"error\":\"invalid uuid\"}");
         }
     }
 

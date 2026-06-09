@@ -21,9 +21,30 @@ commands:
     description: Declare or end wars
     usage: /war <declare|end> [args]
     permission: war.admin
+  claim:
+    description: Claim or manage land chunks
+    usage: /claim <info|claim|release|list> [type]
+  region:
+    description: Admin region type management
+    usage: /region settype <FERTILE|MINING|FUEL|CHOKEPOINT>
+    permission: angelncore.admin
   bank:
     description: Banking commands for loans and repayments
     usage: /bank <loans|borrow|repay> [args]
+  market:
+    description: View cross-venue market prices
+    usage: /market [info <item>]
+  stock:
+    description: Trade stocks in-game
+    usage: /stock <list|portfolio|buy|sell|orders> [args]
+  menu:
+    description: Open the Angel Network hub menu
+    usage: /menu
+    aliases: [angel, hub, am]
+  backup:
+    description: Backup the economy database
+    usage: /backup
+    permission: angelncore.admin
 
 permissions:
   economy.admin:

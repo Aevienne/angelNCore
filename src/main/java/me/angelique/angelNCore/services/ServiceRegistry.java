@@ -9,6 +9,7 @@ public class ServiceRegistry {
     private static StockExchangeService stockExchangeService;
     private static BankService bankService;
     private static RegionService regionService;
+    private static CrossListingService crossListingService;
 
     public static void register(MarketService service) {
         marketService = service;
@@ -42,6 +43,10 @@ public class ServiceRegistry {
         regionService = service;
     }
 
+    public static void register(CrossListingService service) {
+        crossListingService = service;
+    }
+
     public static MarketService getMarketService() {
         return marketService;
     }
@@ -72,5 +77,9 @@ public class ServiceRegistry {
 
     public static RegionService getRegionService() {
         return regionService;
+    }
+
+    public static CrossListingService getCrossListingService() {
+        return crossListingService;
     }
 }

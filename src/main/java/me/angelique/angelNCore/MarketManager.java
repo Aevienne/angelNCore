@@ -19,7 +19,12 @@ public class MarketManager {
     }
 
     private void initMarketPrices() {
-        Set<String> items = plugin.getConfig().getConfigurationSection("items").getKeys(false);
+        var section = plugin.getConfig().getConfigurationSection("items");
+        if (section == null) {
+            plugin.getLogger().warning("No 'items' section in config.yml — market prices not initialized.");
+            return;
+        }
+        Set<String> items = section.getKeys(false);
         for (String item : items) {
             double basePrice = plugin.getConfig().getDouble("items." + item + ".base-price");
             try (PreparedStatement stmt = plugin.getDatabaseManager().getConnection().prepareStatement(
@@ -131,7 +136,9 @@ public class MarketManager {
         new BukkitRunnable() {
             @Override
             public void run() {
-                Set<String> items = plugin.getConfig().getConfigurationSection("items").getKeys(false);
+                var section = plugin.getConfig().getConfigurationSection("items");
+                if (section == null) return;
+                Set<String> items = section.getKeys(false);
                 for (String item : items) {
                     double basePrice = plugin.getConfig().getDouble("items." + item + ".base-price");
                     double currentPrice = getCurrentPrice(item);
@@ -139,6 +146,6 @@ public class MarketManager {
                     updatePrice(item, newPrice, 0, 0);
                 }
             }
-        }.runTaskTimerAsynchronously(plugin, interval, interval);
+        }.runTaskTimer(plugin, interval, interval);
     }
 }

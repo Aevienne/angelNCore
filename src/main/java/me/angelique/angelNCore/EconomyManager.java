@@ -36,6 +36,7 @@ public class EconomyManager {
     }
 
     public double getBalance(UUID uuid) {
+        if (uuid == null) return 0.0;
         try (PreparedStatement stmt = plugin.getDatabaseManager().getConnection().prepareStatement(
                 "SELECT balance FROM balances WHERE uuid = ?")) {
             stmt.setString(1, uuid.toString());
@@ -52,6 +53,7 @@ public class EconomyManager {
     }
 
     public boolean withdraw(UUID uuid, double amount) {
+        if (uuid == null) return false;
         if (!has(uuid, amount)) return false;
         try (PreparedStatement stmt = plugin.getDatabaseManager().getConnection().prepareStatement(
                 "UPDATE balances SET balance = balance - ? WHERE uuid = ?")) {
@@ -66,6 +68,7 @@ public class EconomyManager {
     }
 
     public void deposit(UUID uuid, double amount) {
+        if (uuid == null) return;
         try (PreparedStatement stmt = plugin.getDatabaseManager().getConnection().prepareStatement(
                 "UPDATE balances SET balance = balance + ? WHERE uuid = ?")) {
             stmt.setDouble(1, amount);
@@ -77,6 +80,7 @@ public class EconomyManager {
     }
 
     public void setBalance(UUID uuid, double amount) {
+        if (uuid == null) return;
         try (PreparedStatement stmt = plugin.getDatabaseManager().getConnection().prepareStatement(
                 "UPDATE balances SET balance = ? WHERE uuid = ?")) {
             stmt.setDouble(1, amount);

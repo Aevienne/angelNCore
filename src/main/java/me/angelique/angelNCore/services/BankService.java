@@ -11,6 +11,7 @@ public interface BankService {
     List<LoanInfo> getLoans(UUID borrower);
     boolean processInterest(String loanId);
     List<LoanInfo> getDefaultedLoans();
+    List<LoanInfo> getActiveLoans();
 
     // Bankruptcy
     void chargeMaintenance(String companyId, double amount);

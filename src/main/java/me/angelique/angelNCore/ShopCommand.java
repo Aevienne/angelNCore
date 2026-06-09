@@ -3,6 +3,7 @@ package me.angelique.angelNCore.commands;
 import me.angelique.angelNCore.AngelNCore;
 import me.angelique.angelNCore.economy.EconomyManager;
 import me.angelique.angelNCore.economy.MarketManager;
+import me.angelique.angelNCore.gui.ShopGui;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -34,7 +35,12 @@ public class ShopCommand implements CommandExecutor {
 
         economy.initPlayer(player);
 
-        if (args.length == 0 || args[0].equalsIgnoreCase("list")) {
+        if (args.length == 0) {
+            ShopGui.open(player, plugin, 0);
+            return true;
+        }
+
+        if (args[0].equalsIgnoreCase("list")) {
             sendPriceList(player);
             return true;
         }

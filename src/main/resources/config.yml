@@ -3,12 +3,19 @@ economy:
   currency-symbol: "$"
   currency-name: "Coins"
 
+stock-api-port: 8080
+stock-api-token: ""
+
 shop:
   price-change-rate: 0.05
   min-price-multiplier: 0.2
   max-price-multiplier: 5.0
   price-decay-rate: 0.01
   price-decay-interval: 60
+
+onboarding:
+  starter-kit: true
+  free-claims: 1
 
 items:
   DIAMOND:

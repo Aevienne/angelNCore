@@ -8,19 +8,26 @@ import me.angelique.angelNCore.commands.BankCommand;
 import me.angelique.angelNCore.commands.EcoCommand;
 import me.angelique.angelNCore.commands.ShopCommand;
 import me.angelique.angelNCore.commands.WarCommand;
+import me.angelique.angelNCore.commands.MarketCommand;
+import me.angelique.angelNCore.commands.StockCommand;
+import me.angelique.angelNCore.commands.BackupCommand;
+import me.angelique.angelNCore.gui.MenuCommand;
+import me.angelique.angelNCore.gui.MenuListener;
 import me.angelique.angelNCore.database.DatabaseManager;
 import me.angelique.angelNCore.economy.EconomyManager;
 import me.angelique.angelNCore.economy.MarketManager;
+import me.angelique.angelNCore.economy.VaultEconomyBridge;
 import me.angelique.angelNCore.events.EventBus;
 import me.angelique.angelNCore.listeners.PlayerJoinListener;
 import me.angelique.angelNCore.listeners.StockEventListener;
 import me.angelique.angelNCore.listeners.MilitaryDietListener;
+import me.angelique.angelNCore.listeners.CrossListingListener;
 import me.angelique.angelNCore.services.*;
-import me.angelique.angelNCore.services.impl.*;
 import me.angelique.angelNCore.services.impl.*;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.List;
+import java.util.UUID;
 
 public class AngelNCore extends JavaPlugin {
 
@@ -53,12 +60,24 @@ public class AngelNCore extends JavaPlugin {
         economyManager = new EconomyManager(this);
         marketManager = new MarketManager(this);
 
+        // Register as Vault economy provider so other plugins see our balances
+        if (getServer().getPluginManager().getPlugin("Vault") != null) {
+            VaultEconomyBridge vaultBridge = new VaultEconomyBridge(economyManager);
+            getServer().getServicesManager().register(
+                net.milkbowl.vault.economy.Economy.class, vaultBridge, this,
+                org.bukkit.plugin.ServicePriority.Normal);
+            getLogger().info("Registered as Vault economy provider.");
+        }
+
         stockExchange = new StockExchangeServiceImpl(this);
         ServiceRegistry.register(stockExchange);
         StockEventListener stockListener = new StockEventListener(stockExchange);
 
         bankService = new BankServiceImpl(this);
         ServiceRegistry.register(bankService);
+
+        CrossListingService crossListing = new CrossListingServiceImpl();
+        ServiceRegistry.register(crossListing);
 
         RegionService regionService = new RegionServiceImpl(this);
         ServiceRegistry.register(regionService);
@@ -74,10 +93,18 @@ public class AngelNCore extends JavaPlugin {
         getCommand("claim").setTabCompleter(new ClaimCommand(this));
         getCommand("region").setExecutor(new RegionCommand());
         getCommand("region").setTabCompleter(new RegionCommand());
+        getCommand("market").setExecutor(new MarketCommand());
+        getCommand("market").setTabCompleter(new MarketCommand());
+        getCommand("stock").setExecutor(new StockCommand());
+        getCommand("stock").setTabCompleter(new StockCommand());
+        getCommand("backup").setExecutor(new BackupCommand(this));
+        getCommand("menu").setExecutor(new MenuCommand());
 
+        getServer().getPluginManager().registerEvents(new MenuListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
         getServer().getPluginManager().registerEvents(stockListener, this);
         getServer().getPluginManager().registerEvents(new MilitaryDietListener(), this);
+        getServer().getPluginManager().registerEvents(new CrossListingListener(crossListing), this);
 
         stockApi = new StockApiServer(this, stockExchange);
         ((StockExchangeServiceImpl) stockExchange).setApiServer(stockApi);
@@ -85,11 +112,20 @@ public class AngelNCore extends JavaPlugin {
 
         marketManager.startDecayTask();
 
-        // Daily interest & bankruptcy tick (every hour)
-        getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
-            List<BankService.LoanInfo> overdue = bankService.getDefaultedLoans();
-            for (BankService.LoanInfo l : overdue) {
+        // Hourly interest tick on ALL active loans + auto-collect from player balance
+        getServer().getScheduler().runTaskTimer(this, () -> {
+            List<BankService.LoanInfo> active = bankService.getActiveLoans();
+            for (BankService.LoanInfo l : active) {
                 bankService.processInterest(l.loanId());
+                try {
+                    UUID borrower = UUID.fromString(l.borrowerUUID());
+                    if (economyManager.getBalance(borrower) > 0) {
+                        double toRepay = Math.min(economyManager.getBalance(borrower) * 0.1, l.remaining());
+                        bankService.repayLoan(l.loanId(), borrower, toRepay);
+                    }
+                } catch (Exception e) {
+                    getLogger().warning("Interest/repay failed for loan " + l.loanId() + ": " + e.getMessage());
+                }
             }
         }, 72000L, 72000L);
 
@@ -99,6 +135,7 @@ public class AngelNCore extends JavaPlugin {
     @Override
     public void onDisable() {
         if (stockApi != null) stockApi.stop();
+        BackupCommand.backupOnDisable(this);
         if (databaseManager != null) databaseManager.close();
         getLogger().info("angelNCore economy disabled!");
     }

@@ -22,6 +22,21 @@ public class BankServiceImpl implements BankService {
 
     @Override
     public String createLoan(UUID borrower, double amount, double rate, int termDays) {
+        if (borrower == null || amount <= 0) return "";
+        // Credit check: reject if borrower has defaulted loans
+        List<LoanInfo> existing = getLoans(borrower);
+        for (LoanInfo l : existing) {
+            if ("defaulted".equals(l.status())) {
+                plugin.getLogger().warning("Loan rejected: " + borrower + " has defaulted loan " + l.loanId());
+                return "";
+            }
+        }
+        // Limit: max 3 active loans
+        long activeCount = existing.stream().filter(l -> "active".equals(l.status())).count();
+        if (activeCount >= 3) {
+            plugin.getLogger().warning("Loan rejected: " + borrower + " already has 3 active loans");
+            return "";
+        }
         String id = UUID.randomUUID().toString();
         long now = System.currentTimeMillis();
         long due = now + (long) termDays * 86400000L;
@@ -124,6 +139,21 @@ public class BankServiceImpl implements BankService {
             }
         } catch (SQLException e) {
             plugin.getLogger().warning("getDefaultedLoans: " + e.getMessage());
+        }
+        return list;
+    }
+
+    @Override
+    public List<LoanInfo> getActiveLoans() {
+        List<LoanInfo> list = new ArrayList<>();
+        try (Statement stmt = c().createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT loan_id, borrower_uuid, amount, remaining, rate, issued_at, due_at, status FROM loans WHERE status='active'")) {
+            while (rs.next()) {
+                list.add(new LoanInfo(rs.getString(1), rs.getString(2), rs.getDouble(3), rs.getDouble(4),
+                        rs.getDouble(5), rs.getLong(6), rs.getLong(7), rs.getString(8)));
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().warning("getActiveLoans: " + e.getMessage());
         }
         return list;
     }

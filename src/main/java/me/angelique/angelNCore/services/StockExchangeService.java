@@ -5,7 +5,7 @@ import java.util.UUID;
 
 public interface StockExchangeService {
 
-    void listCompany(String companyId, int totalShares, double initialPrice);
+    void listCompany(String companyId, String companyName, int totalShares, double initialPrice);
     boolean isListed(String companyId);
 
     record CompanyInfo(String companyId, String name, int totalShares, double currentPrice, int volume) {}
@@ -22,6 +22,12 @@ public interface StockExchangeService {
     int getHolding(UUID playerUUID, String companyId);
 
     void recordRevenue(String companyId, double revenue);
+    void distributeDividends(String companyId, double amount);
     void applyDamageModifier(String companyId, double factor);
     void applyWarModifier(String companyId, double factor);
+    void applySeasonModifier(String companyId, double factor);
+
+    // Auth
+    String generateToken(UUID playerUUID);
+    UUID validateToken(String token);
 }

@@ -53,8 +53,13 @@ public class PlayerJoinListener implements Listener {
             "  &cMercenary &7- Bounty hunting, escort contracts\n" +
             "  &5Regional Power &7- Control land, tax production\n" +
             "  &dFinancial &7- Trade stocks, lend currency\n\n" +
-            "&7Commands: &e/shop &7| &e/balance &7| &e/claim &7| &e/contract\n" +
-            "&aYou have a free land claim! Use &e/claim claim &ato start."
+            "&7Commands:\n" +
+            "  &e/shop &7| &e/balance &7| &e/claim &7| &e/contract\n" +
+            "  &e/stock &7| &e/bank &7| &e/market &7| &e/auction\n" +
+            "  &e/company &7| &e/factory &7| &e/route &7| &e/duel\n" +
+            "  &e/season &7| &e/sustenance\n\n" +
+            "&aYou have a free land claim! Use &e/claim claim &ato start.\n" +
+            "&bWeb: &fhttp://127.0.0.1:8080/app/ &7(Stock Exchange)"
         ));
 
         // Grant free claim

@@ -22,6 +22,10 @@ public class DatabaseManager {
 
             Class.forName("org.sqlite.JDBC");
             connection = DriverManager.getConnection("jdbc:sqlite:" + dbFile.getAbsolutePath());
+            try (Statement stmt = connection.createStatement()) {
+                stmt.execute("PRAGMA journal_mode=WAL");
+                stmt.execute("PRAGMA busy_timeout=5000");
+            }
 
             createTables();
             plugin.getLogger().info("Database connected.");
@@ -77,8 +81,28 @@ public class DatabaseManager {
                     type TEXT NOT NULL,
                     shares INTEGER NOT NULL,
                     price REAL NOT NULL,
+                    locked_funds REAL NOT NULL DEFAULT 0,
                     status TEXT NOT NULL DEFAULT 'open',
                     placed_at LONG NOT NULL
+                )
+            """);
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS stock_transactions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    company_id TEXT NOT NULL,
+                    buyer_uuid TEXT NOT NULL,
+                    seller_uuid TEXT NOT NULL,
+                    shares INTEGER NOT NULL,
+                    price REAL NOT NULL,
+                    total REAL NOT NULL,
+                    timestamp LONG NOT NULL
+                )
+            """);
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS web_tokens (
+                    player_uuid TEXT PRIMARY KEY,
+                    token TEXT NOT NULL,
+                    expires LONG NOT NULL
                 )
             """);
             stmt.execute("""
@@ -125,6 +149,9 @@ public class DatabaseManager {
             try { stmt.execute("ALTER TABLE listed_companies ADD COLUMN damage_factor REAL NOT NULL DEFAULT 1.0"); } catch (SQLException ignored) {}
             try { stmt.execute("ALTER TABLE listed_companies ADD COLUMN war_factor REAL NOT NULL DEFAULT 1.0"); } catch (SQLException ignored) {}
             try { stmt.execute("ALTER TABLE listed_companies ADD COLUMN logistics_factor REAL NOT NULL DEFAULT 1.0"); } catch (SQLException ignored) {}
+            try { stmt.execute("ALTER TABLE listed_companies ADD COLUMN season_factor REAL NOT NULL DEFAULT 1.0"); } catch (SQLException ignored) {}
+            try { stmt.execute("ALTER TABLE stock_orders ADD COLUMN locked_funds REAL NOT NULL DEFAULT 0"); } catch (SQLException ignored) {}
+            try { stmt.execute("ALTER TABLE listed_companies ADD COLUMN name TEXT NOT NULL DEFAULT ''"); } catch (SQLException ignored) {}
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS land_claims (
                     world TEXT NOT NULL,
