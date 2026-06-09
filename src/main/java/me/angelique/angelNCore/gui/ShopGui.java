@@ -25,9 +25,9 @@ public final class ShopGui {
         37,38,39,40,41,42,43
     };
     private static final int[] BUY_AMOUNTS = {1, 8, 16, 32, 64};
-    private static final int[] BUY_SLOTS = {10, 11, 12, 13, 14};
+    private static final int[] BUY_SLOTS = {11, 12, 13, 14, 15};
     private static final int[] SELL_AMOUNTS = {1, 8, 16, 32, 64};
-    private static final int[] SELL_SLOTS = {28, 29, 30, 31, 32};
+    private static final int[] SELL_SLOTS = {29, 30, 31, 32, 33};
 
     static final Map<UUID, String> selectedItem = new HashMap<>();
 
@@ -103,28 +103,24 @@ public final class ShopGui {
             }
         }
 
-        // Item display
-        inv.setItem(4, item(mat != null ? mat : Material.PAPER, "&f" + displayName,
+        // Item info in center
+        inv.setItem(13, item(mat != null ? mat : Material.PAPER, "&f" + displayName,
                 "&aBuy price: &f$" + String.format("%.2f", buyPrice),
                 "&eSell price: &f$" + String.format("%.2f", sellPrice),
                 "&6Your balance: &f$" + String.format("%.2f", balance),
                 "&7You have: &f" + held));
-        inv.setItem(13, item(mat != null ? mat : Material.PAPER, "&f" + displayName));
 
-        // Buy row
-        inv.setItem(9, item(Material.LIME_STAINED_GLASS_PANE, "&aBUY"));
+        // Buy buttons centered in row 2 (slots 11-15)
         for (int i = 0; i < BUY_AMOUNTS.length; i++) {
             double cost = buyPrice * BUY_AMOUNTS[i];
             boolean canAfford = balance >= cost;
             inv.setItem(BUY_SLOTS[i], item(canAfford ? Material.LIME_TERRACOTTA : Material.GRAY_TERRACOTTA,
                     "&aBuy " + BUY_AMOUNTS[i],
                     canAfford ? "&7Cost: &f$" + String.format("%.2f", cost) : "&cCannot afford",
-                    canAfford ? "" : "&7Need: &f$" + String.format("%.2f", cost),
                     canAfford ? "&eClick to buy" : ""));
         }
 
-        // Sell row
-        inv.setItem(27, item(Material.RED_STAINED_GLASS_PANE, "&cSELL"));
+        // Sell buttons centered in row 4 (slots 29-33)
         for (int i = 0; i < SELL_AMOUNTS.length; i++) {
             double value = sellPrice * SELL_AMOUNTS[i];
             boolean canSell = held >= SELL_AMOUNTS[i];
@@ -154,7 +150,7 @@ public final class ShopGui {
         market.recordBuy(itemKey, amount, player.getUniqueId(), player.getName(), priceEach);
         Map<Integer, ItemStack> leftover = player.getInventory().addItem(new ItemStack(mat, amount));
         leftover.values().forEach(item -> player.getWorld().dropItemNaturally(player.getLocation(), item));
-        player.sendMessage(TextUtil.color("&aBought &f" + amount + "x " + market.getDisplayName(itemKey) + " &afor $" + String.format("%.2f", total)));
+        player.sendMessage(TextUtil.color("&aBought " + amount + "x " + market.getDisplayName(itemKey) + " for $" + String.format("%.2f", total)));
     }
 
     public static void handleSell(Player player, AngelNCore plugin, String itemKey, int amount) {
@@ -176,7 +172,7 @@ public final class ShopGui {
         player.getInventory().removeItem(new ItemStack(mat, amount));
         economy.deposit(player.getUniqueId(), total);
         market.recordSell(itemKey, amount, player.getUniqueId(), player.getName(), priceEach);
-        player.sendMessage(TextUtil.color("&aSold &f" + amount + "x " + market.getDisplayName(itemKey) + " &afor $" + String.format("%.2f", total)));
+        player.sendMessage(TextUtil.color("&aSold " + amount + "x " + market.getDisplayName(itemKey) + " for $" + String.format("%.2f", total)));
     }
 
     static void fillBorder(Inventory inv) {

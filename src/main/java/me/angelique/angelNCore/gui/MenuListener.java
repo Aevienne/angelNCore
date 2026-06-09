@@ -158,30 +158,25 @@ public class MenuListener implements Listener {
         StockExchangeService ex = ServiceRegistry.getStockExchangeService();
         if (company == null || ex == null) return;
 
-        if (slot == 31) { StockGui.open(player, plugin, stockPages.getOrDefault(id, 0)); return; }
+        if (slot == 49) { StockGui.open(player, plugin, stockPages.getOrDefault(id, 0)); return; }
 
-        // Buy amounts (slots 10-14)
         int[] buyAmounts = {1, 5, 10, 50, 100};
         for (int i = 0; i < buyAmounts.length; i++) {
-            if (slot == 10 + i) {
-                String orderId = ex.placeOrder(id, company.companyId(), "buy", buyAmounts[i], company.currentPrice());
-                player.sendMessage(TextUtil.color("&aBUY order placed: " + buyAmounts[i] + " shares of " + company.name() + " @ $" + String.format("%.2f", company.currentPrice())));
+            if (slot == 20 + i) {
+                ex.placeOrder(id, company.companyId(), "buy", buyAmounts[i], company.currentPrice());
+                player.sendMessage(TextUtil.color("&aBUY: " + buyAmounts[i] + " shares of " + company.name() + " @ $" + String.format("%.2f", company.currentPrice())));
                 player.closeInventory();
                 return;
             }
         }
-
-        // Sell amounts (slots 20-24)
         int[] sellAmounts = {1, 5, 10, 50, 100};
         for (int i = 0; i < sellAmounts.length; i++) {
-            if (slot == 20 + i) {
-                int myShares = ex.getHolding(id, company.companyId());
-                if (myShares < sellAmounts[i]) {
-                    player.sendMessage(TextUtil.color("&cYou only have " + myShares + " shares."));
-                    return;
+            if (slot == 29 + i) {
+                if (ex.getHolding(id, company.companyId()) < sellAmounts[i]) {
+                    player.sendMessage(TextUtil.color("&cNot enough shares.")); return;
                 }
-                String orderId = ex.placeOrder(id, company.companyId(), "sell", sellAmounts[i], company.currentPrice());
-                player.sendMessage(TextUtil.color("&cSELL order placed: " + sellAmounts[i] + " shares of " + company.name() + " @ $" + String.format("%.2f", company.currentPrice())));
+                ex.placeOrder(id, company.companyId(), "sell", sellAmounts[i], company.currentPrice());
+                player.sendMessage(TextUtil.color("&cSELL: " + sellAmounts[i] + " shares of " + company.name() + " @ $" + String.format("%.2f", company.currentPrice())));
                 player.closeInventory();
                 return;
             }
@@ -238,11 +233,11 @@ public class MenuListener implements Listener {
 
         int[] buyAmounts = {1, 8, 16, 32, 64};
         for (int i = 0; i < buyAmounts.length; i++) {
-            if (slot == 10 + i) { ShopGui.handleBuy(player, plugin, itemKey, buyAmounts[i]); ShopGui.openDetail(player, plugin, itemKey); return; }
+            if (slot == 11 + i) { ShopGui.handleBuy(player, plugin, itemKey, buyAmounts[i]); ShopGui.openDetail(player, plugin, itemKey); return; }
         }
         int[] sellAmounts = {1, 8, 16, 32, 64};
         for (int i = 0; i < sellAmounts.length; i++) {
-            if (slot == 28 + i) { ShopGui.handleSell(player, plugin, itemKey, sellAmounts[i]); ShopGui.openDetail(player, plugin, itemKey); return; }
+            if (slot == 29 + i) { ShopGui.handleSell(player, plugin, itemKey, sellAmounts[i]); ShopGui.openDetail(player, plugin, itemKey); return; }
         }
     }
 
