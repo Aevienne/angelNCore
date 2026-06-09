@@ -17,6 +17,12 @@ public final class BankGui {
 
     public static final String TITLE = TextUtil.color("&8Bank &7\u2014 &eLoans & Repay");
     static final int SIZE = 45;
+    private static final int[] LOAN_SLOTS = {19, 20, 21, 22, 23, 24, 25};
+    private static final int[] BORROW_SLOTS = {28, 29, 30, 31, 32, 33, 34};
+    private static final double[] BORROW_AMOUNTS = {1000, 5000, 10000, 30000, 50000, 100000, 250000};
+    private static final int[] BORROW_TERMS = {5, 10, 15, 30, 30, 60, 90};
+
+    static final Map<UUID, List<BankService.LoanInfo>> activeLoanCache = new HashMap<>();
 
     private BankGui() {}
 
@@ -26,52 +32,45 @@ public final class BankGui {
         fillBorder(inv);
 
         inv.setItem(4, item(Material.GOLD_BLOCK, "&eAngel Bank",
-                "&7Take loans against your company",
-                "&7Max 3 active loans \u2022 Interest: 5% APR"));
+                "&7Collateral: company treasury \u2265 50% of loan",
+                "&7Max 3 active loans \u2022 5% APR"));
 
         double balance = plugin.getEconomyManager().getBalance(player.getUniqueId());
-        inv.setItem(10, item(Material.GOLD_NUGGET, "&6Your Balance: &e$" + String.format("%.2f", balance)));
-
-        // Active loans
-        List<BankService.LoanInfo> loans = bank.getLoans(player.getUniqueId());
-        inv.setItem(13, item(Material.PAPER, "&eActive Loans: &f" + loans.stream().filter(l -> "active".equals(l.status())).count()));
+        inv.setItem(10, item(Material.GOLD_NUGGET, "&6Your Balance: &e$" + String.format("%.2f", balance),
+                "&7Auto-repay: 10% of balance every hour"));
 
         if (bank == null) {
             inv.setItem(22, item(Material.BARRIER, "&cBank unavailable"));
         } else {
-            // Show active loans in slots 19-25
-            int slot = 19;
-            for (BankService.LoanInfo l : loans) {
-                if (slot > 25) break;
-                if (!"active".equals(l.status())) continue;
-                inv.setItem(slot++, item(Material.PAPER, "&fLoan #" + l.loanId().substring(0, 8),
+            List<BankService.LoanInfo> activeLoans = bank.getLoans(player.getUniqueId()).stream()
+                    .filter(l -> "active".equals(l.status())).toList();
+            activeLoanCache.put(player.getUniqueId(), activeLoans);
+
+            inv.setItem(13, item(Material.PAPER, "&eActive Loans: &f" + activeLoans.size() + " / 3"));
+
+            for (int i = 0; i < Math.min(activeLoans.size(), LOAN_SLOTS.length); i++) {
+                BankService.LoanInfo l = activeLoans.get(i);
+                inv.setItem(LOAN_SLOTS[i], item(Material.PAPER, "&fLoan #" + l.loanId().substring(0, 8),
                         "&7Amount: &f$" + String.format("%.2f", l.amount()),
                         "&7Remaining: &e$" + String.format("%.2f", l.remaining()),
                         "&7Rate: &f" + String.format("%.1f", l.rate() * 100) + "%",
                         "&7Due: &f" + new java.util.Date(l.dueAt()),
                         "",
-                        "&eClick to auto-repay"));
+                        "&aClick to repay from balance"));
             }
 
-            // Borrow
-            inv.setItem(29, item(Material.EMERALD, "&aBorrow Money",
-                    "&7Usage: /bank borrow <amount> <days>",
-                    "&7Collateral: company treasury 50%+ of loan",
-                    "",
-                    "&eClick for help"));
-            // Repay
-            inv.setItem(31, item(Material.GOLD_INGOT, "&eRepay Loan",
-                    "&7Usage: /bank repay <loanId> <amount>",
-                    "&7Auto-repay 10% of balance every hour",
-                    "",
-                    "&eClick for help"));
-            // History
-            inv.setItem(33, item(Material.BOOK, "&7Loan History",
-                    "&7Defaulted loans block new borrowing",
-                    "&7and trigger company liquidation"));
+            // Borrow row: predefined amounts
+            for (int i = 0; i < BORROW_AMOUNTS.length; i++) {
+                inv.setItem(BORROW_SLOTS[i], item(Material.EMERALD, "&aBorrow $" + String.format("%,.0f", BORROW_AMOUNTS[i]),
+                        "&7Term: &f" + BORROW_TERMS[i] + " days",
+                        "&7Rate: &f5% APR",
+                        "&7Collateral: company treasury \u2265 50%",
+                        "",
+                        "&eClick to borrow"));
+            }
         }
 
-        inv.setItem(40, item(Material.OAK_DOOR, "&cBack to Hub", "&7Return to main menu"));
+        inv.setItem(40, item(Material.OAK_DOOR, "&cBack to Hub"));
         player.openInventory(inv);
     }
 
