@@ -15,4 +15,8 @@ public interface CompanyService {
 
     /** Returns the company ID the given player belongs to, or null if they have none. */
     String getCompanyForPlayer(UUID playerId);
+
+    record CompanyInfo(String id, String name, UUID owner, double treasury) {}
+
+    CompanyInfo getCompanyByOwner(UUID ownerId);
 }

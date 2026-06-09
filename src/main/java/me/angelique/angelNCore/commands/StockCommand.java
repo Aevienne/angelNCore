@@ -1,5 +1,7 @@
 package me.angelique.angelNCore.commands;
 
+import me.angelique.angelNCore.AngelNCore;
+import me.angelique.angelNCore.gui.StockGui;
 import me.angelique.angelNCore.services.StockExchangeService;
 import me.angelique.angelNCore.services.StockExchangeService.CompanyInfo;
 import me.angelique.angelNCore.services.StockExchangeService.OrderInfo;
@@ -29,7 +31,12 @@ public class StockCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        if (args.length == 0 || args[0].equalsIgnoreCase("list")) {
+        if (args.length == 0) {
+            StockGui.open(p, AngelNCore.getInstance(), 0);
+            return true;
+        }
+
+        if (args[0].equalsIgnoreCase("list")) {
             List<CompanyInfo> companies = ex.listCompanies();
             p.sendMessage("\u00a76\u00a7l=== Listed Companies ===\u00a7r");
             if (companies.isEmpty()) {

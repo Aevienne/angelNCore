@@ -70,6 +70,17 @@ public class CompanyServiceImpl implements CompanyService {
         return null;
     }
 
+    @Override
+    public CompanyInfo getCompanyByOwner(UUID ownerId) {
+        for (Map.Entry<String, CompanyData> entry : companies.entrySet()) {
+            if (entry.getValue().founder.equals(ownerId)) {
+                CompanyData d = entry.getValue();
+                return new CompanyInfo(entry.getKey(), d.name, d.founder, d.balance);
+            }
+        }
+        return null;
+    }
+
     private static class CompanyData {
         String name;
         UUID founder;

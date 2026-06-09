@@ -1,6 +1,7 @@
 package me.angelique.angelNCore.commands;
 
 import me.angelique.angelNCore.AngelNCore;
+import me.angelique.angelNCore.gui.BankGui;
 import me.angelique.angelNCore.services.BankService;
 import me.angelique.angelNCore.services.CompanyService;
 import me.angelique.angelNCore.services.ServiceRegistry;
@@ -35,7 +36,8 @@ public class BankCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        if (args.length == 0 || args[0].equalsIgnoreCase("loans")) {
+        if (args.length == 0) { BankGui.open(player, plugin); return true; }
+        if (args[0].equalsIgnoreCase("loans")) {
             var loans = bank.getLoans(player.getUniqueId());
             player.sendMessage(ChatColor.GOLD + "=== Your Loans ===");
             for (var l : loans) {
@@ -55,8 +57,12 @@ public class BankCommand implements CommandExecutor, TabCompleter {
             int term = Integer.parseInt(args[2]);
             double rate = plugin.getConfig().getDouble("bank.default-rate", 0.05);
             String id = bank.createLoan(player.getUniqueId(), amount, rate, term);
-            player.sendMessage(ChatColor.GREEN + "Loan approved: $" + String.format("%.2f", amount) +
-                " for " + term + " days at " + (rate * 100) + "% APR. ID: " + id.substring(0, 8));
+            if (id == null || id.isEmpty()) {
+                player.sendMessage(ChatColor.RED + "Loan rejected. Check logs for reason.");
+            } else {
+                player.sendMessage(ChatColor.GREEN + "Loan approved: $" + String.format("%.2f", amount) +
+                    " for " + term + " days at " + (rate * 100) + "% APR. ID: " + id.substring(0, 8));
+            }
             return true;
         }
 

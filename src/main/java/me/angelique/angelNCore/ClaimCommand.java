@@ -1,6 +1,7 @@
 package me.angelique.angelNCore.commands;
 
 import me.angelique.angelNCore.AngelNCore;
+import me.angelique.angelNCore.gui.ClaimGui;
 import me.angelique.angelNCore.services.RegionService;
 import me.angelique.angelNCore.services.ServiceRegistry;
 import org.bukkit.ChatColor;
@@ -29,7 +30,9 @@ public class ClaimCommand implements CommandExecutor, TabCompleter {
         RegionService rs = ServiceRegistry.getRegionService();
         if (rs == null) { player.sendMessage(ChatColor.RED + "Region service unavailable."); return true; }
 
-        if (args.length == 0 || args[0].equalsIgnoreCase("info")) {
+        if (args.length == 0) { ClaimGui.open(player, plugin); return true; }
+
+        if (args[0].equalsIgnoreCase("info")) {
             Chunk c = player.getLocation().getChunk();
             var owner = rs.getChunkOwner(c.getWorld().getName(), c.getX(), c.getZ());
             var type = rs.getRegionType(c.getWorld().getName(), c.getX(), c.getZ());

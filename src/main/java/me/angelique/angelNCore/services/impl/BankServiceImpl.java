@@ -37,6 +37,19 @@ public class BankServiceImpl implements BankService {
             plugin.getLogger().warning("Loan rejected: " + borrower + " already has 3 active loans");
             return "";
         }
+        // Collateral check: player must have a company with treasury >= loan amount
+        CompanyServiceImpl cs = (CompanyServiceImpl) ServiceRegistry.getCompanyService();
+        if (cs != null) {
+            var company = cs.getCompanyByOwner(borrower);
+            if (company == null) {
+                plugin.getLogger().warning("Loan rejected: " + borrower + " has no company as collateral");
+                return "";
+            }
+            if (company.treasury() < amount * 0.5) {
+                plugin.getLogger().warning("Loan rejected: " + borrower + " company treasury too low (" + String.format("%.2f", company.treasury()) + " < " + String.format("%.2f", amount * 0.5) + ")");
+                return "";
+            }
+        }
         String id = UUID.randomUUID().toString();
         long now = System.currentTimeMillis();
         long due = now + (long) termDays * 86400000L;

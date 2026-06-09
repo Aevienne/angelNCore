@@ -2,6 +2,8 @@ package me.angelique.angelNCore.gui;
 
 import me.angelique.angelNCore.AngelNCore;
 import me.angelique.angelNCore.economy.MarketManager;
+import me.angelique.angelNCore.services.RegionService;
+import me.angelique.angelNCore.services.ServiceRegistry;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -18,6 +20,7 @@ public class MenuListener implements Listener {
 
     private final AngelNCore plugin;
     private final Map<UUID, Integer> shopPages = new HashMap<>();
+    private final Map<UUID, Integer> stockPages = new HashMap<>();
 
     public MenuListener(AngelNCore plugin) {
         this.plugin = plugin;
@@ -34,6 +37,15 @@ public class MenuListener implements Listener {
         } else if (title.equals(ShopGui.TITLE)) {
             event.setCancelled(true);
             handleShopClick(player, event);
+        } else if (title.equals(BankGui.TITLE)) {
+            event.setCancelled(true);
+            handleBankClick(player, event.getSlot());
+        } else if (title.equals(StockGui.TITLE)) {
+            event.setCancelled(true);
+            handleStockClick(player, event);
+        } else if (title.equals(ClaimGui.TITLE)) {
+            event.setCancelled(true);
+            handleClaimClick(player, event);
         }
     }
 
@@ -57,6 +69,41 @@ public class MenuListener implements Listener {
         }
     }
 
+    private void handleBankClick(Player player, int slot) {
+        if (slot == 29) { player.closeInventory(); player.chat("/bank borrow"); }
+        else if (slot == 31) { player.closeInventory(); player.chat("/bank repay"); }
+        else if (slot == 40) { AngelHubGui.open(player); }
+    }
+
+    private void handleStockClick(Player player, InventoryClickEvent event) {
+        if (event.getSlot() == 47) { player.closeInventory(); player.chat("/stock portfolio"); }
+        else if (event.getSlot() == 49) { player.closeInventory(); player.chat("/stock token"); }
+        else if (event.getSlot() == 51) { AngelHubGui.open(player); }
+        else if (event.getSlot() == 45) {
+            UUID id = player.getUniqueId();
+            stockPages.put(id, Math.max(0, stockPages.getOrDefault(id, 0) - 1));
+            StockGui.open(player, plugin, stockPages.get(id));
+        }
+        else if (event.getSlot() == 53) {
+            UUID id = player.getUniqueId();
+            stockPages.put(id, stockPages.getOrDefault(id, 0) + 1);
+            StockGui.open(player, plugin, stockPages.get(id));
+        }
+    }
+
+    private void handleClaimClick(Player player, InventoryClickEvent event) {
+        int slot = event.getSlot();
+        RegionService rs = ServiceRegistry.getRegionService();
+        if (slot == 21) { player.closeInventory(); player.chat("/claim claim"); }
+        else if (slot == 22) {
+            if (event.isShiftClick()) { player.closeInventory(); player.chat("/claim release"); }
+            else { player.closeInventory(); player.chat("/claim claim FERTILE"); }
+        }
+        else if (slot == 23) { player.closeInventory(); player.chat("/claim claim MINING"); }
+        else if (slot == 24) { player.closeInventory(); player.chat("/claim claim FUEL"); }
+        else if (slot == 40) { AngelHubGui.open(player); }
+    }
+
     private void handleShopClick(Player player, InventoryClickEvent event) {
         ItemStack clicked = event.getCurrentItem();
         if (clicked == null || clicked.getType().isAir()) return;
@@ -66,17 +113,12 @@ public class MenuListener implements Listener {
         MarketManager market = plugin.getMarketManager();
         Material type = clicked.getType();
 
-        if (event.getSlot() == 48) {
-            AngelHubGui.open(player);
-            return;
-        }
-
+        if (event.getSlot() == 48) { AngelHubGui.open(player); return; }
         if (event.getSlot() == 45 && type == Material.ARROW) {
             shopPages.put(id, Math.max(0, page - 1));
             ShopGui.open(player, plugin, page - 1);
             return;
         }
-
         if (event.getSlot() == 53 && type == Material.ARROW) {
             shopPages.put(id, page + 1);
             ShopGui.open(player, plugin, page + 1);
@@ -90,18 +132,12 @@ public class MenuListener implements Listener {
         boolean isRight = event.isRightClick();
         int amount = isShift ? 64 : 1;
 
-        if (isRight) {
-            ShopGui.handleSell(player, plugin, itemKey, amount);
-        } else {
-            ShopGui.handleBuy(player, plugin, itemKey, amount);
-        }
+        if (isRight) ShopGui.handleSell(player, plugin, itemKey, amount);
+        else ShopGui.handleBuy(player, plugin, itemKey, amount);
 
-        // Reopen with refreshed prices
         new BukkitRunnable() {
             @Override
-            public void run() {
-                ShopGui.open(player, plugin, shopPages.getOrDefault(player.getUniqueId(), 0));
-            }
+            public void run() { ShopGui.open(player, plugin, shopPages.getOrDefault(player.getUniqueId(), 0)); }
         }.runTaskLater(plugin, 2L);
     }
 }

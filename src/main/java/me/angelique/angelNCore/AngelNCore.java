@@ -22,6 +22,7 @@ import me.angelique.angelNCore.listeners.PlayerJoinListener;
 import me.angelique.angelNCore.listeners.StockEventListener;
 import me.angelique.angelNCore.listeners.MilitaryDietListener;
 import me.angelique.angelNCore.listeners.CrossListingListener;
+import me.angelique.angelNCore.services.CompanyService;
 import me.angelique.angelNCore.services.*;
 import me.angelique.angelNCore.services.impl.*;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -128,6 +129,33 @@ public class AngelNCore extends JavaPlugin {
                 }
             }
         }, 72000L, 72000L);
+
+        // Loan default check every 30 min: mark overdue, liquidate bankrupt companies
+        getServer().getScheduler().runTaskTimer(this, () -> {
+            long now = System.currentTimeMillis();
+            List<BankService.LoanInfo> active = bankService.getActiveLoans();
+            for (BankService.LoanInfo l : active) {
+                if (now > l.dueAt()) {
+                    UUID borrower;
+                    try { borrower = UUID.fromString(l.borrowerUUID()); } catch (Exception e) { continue; }
+                    getLogger().warning("Loan " + l.loanId().substring(0, 8) + " defaulted — borrower: " + borrower);
+                    try (var ps = databaseManager.getConnection().prepareStatement(
+                            "UPDATE loans SET status='defaulted' WHERE loan_id=? AND status='active'")) {
+                        ps.setString(1, l.loanId());
+                        ps.executeUpdate();
+                    } catch (Exception e) { getLogger().warning("Default update failed: " + e.getMessage()); }
+                    // Liquidate company if borrower owns one
+                    CompanyService cs = ServiceRegistry.getCompanyService();
+                    if (cs instanceof CompanyServiceImpl csimpl) {
+                        var info = cs.getCompanyByOwner(borrower);
+                        if (info != null) {
+                            bankService.liquidateCompany(info.id());
+                            getLogger().warning("Company " + info.name() + " liquidated due to loan default.");
+                        }
+                    }
+                }
+            }
+        }, 36000L, 36000L);
 
         getLogger().info("angelNCore economy enabled!");
     }
