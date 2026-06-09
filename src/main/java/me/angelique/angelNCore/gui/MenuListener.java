@@ -7,6 +7,7 @@ import me.angelique.angelNCore.services.RegionService;
 import me.angelique.angelNCore.services.ServiceRegistry;
 import me.angelique.angelNCore.services.StockExchangeService;
 import me.angelique.angelNCore.services.StockExchangeService.CompanyInfo;
+import me.angelique.angelNCore.tutorial.TutorialSession;
 import me.angelique.angelNCore.util.TextUtil;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -14,6 +15,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 
@@ -58,13 +60,29 @@ public class MenuListener implements Listener {
         } else if (title.equals(TutorialGui.TITLE)) {
             event.setCancelled(true);
             handleTutorialClick(player, event);
+        } else if (title.equals(TutorialGui.SIM_TITLE)) {
+            event.setCancelled(true);
+            handleSimClick(player, event);
         }
     }
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
-        TutorialGui.cleanupDummy(event.getPlayer());
-        TutorialGui.tutorialStep.remove(event.getPlayer().getUniqueId());
+        TutorialSession.remove(event.getPlayer());
+    }
+
+    @EventHandler
+    public void onEntityDeath(EntityDeathEvent event) {
+        if (!(event.getEntity() instanceof org.bukkit.entity.Zombie zombie)) return;
+        org.bukkit.entity.Player killer = zombie.getKiller();
+        if (killer == null) return;
+        var s = TutorialSession.get(killer);
+        if (!s.isActive() || s.getDuelBot() == null) return;
+        if (zombie.equals(s.getDuelBot())) {
+            s.setDuelBot(null);
+            s.setDuelCompleted(true);
+            killer.sendMessage(TextUtil.color("&aDummy defeated! Click Next in the tutorial."));
+        }
     }
 
     private void handleHubClick(Player player, int slot) {
@@ -235,16 +253,23 @@ public class MenuListener implements Listener {
     }
 
     private void handleTutorialClick(Player player, InventoryClickEvent event) {
-        UUID id = player.getUniqueId();
-        int step = TutorialGui.tutorialStep.getOrDefault(id, 0);
         int slot = event.getSlot();
-        String[] data = TutorialGui.STEPS[step];
-        String actionType = data[data.length - 1];
+        if (slot == 40) { TutorialGui.exit(player); return; }
+        if (slot == 36) { TutorialGui.back(player); return; }
+        if (slot == 44) { TutorialGui.advance(player); return; }
+        if (slot == 31) { TutorialGui.doAction(player, slot); return; }
+        // Shop item slots (19-25) for demo shop
+        if (slot >= 19 && slot <= 25) { TutorialGui.doAction(player, slot); return; }
+    }
 
-        if (slot == 40) { TutorialGui.tutorialStep.remove(id); TutorialGui.cleanupDummy(player); player.closeInventory(); return; }
-        if (slot == 36) { TutorialGui.open(player, step - 1); return; }
-        if (slot == 44) { TutorialGui.open(player, step + 1); return; }
-        if (slot == 31) { TutorialGui.doAction(player, actionType); return; }
+    private void handleSimClick(Player player, InventoryClickEvent event) {
+        int slot = event.getSlot();
+        // Only used by demo shop currently
+        if (slot == 40 || slot == 36 || slot == 44 || (slot >= 19 && slot <= 25)) {
+            TutorialGui.doAction(player, slot);
+            if (slot == 36) TutorialGui.back(player);
+            else if (slot == 44) TutorialGui.advance(player);
+        }
     }
 
     // --- Shop ---

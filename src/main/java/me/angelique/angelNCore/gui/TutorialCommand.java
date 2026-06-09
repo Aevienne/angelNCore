@@ -15,7 +15,7 @@ public class TutorialCommand implements CommandExecutor {
             sender.sendMessage("Players only.");
             return true;
         }
-        TutorialGui.open(player, 0);
+        TutorialGui.open(player);
         return true;
     }
 }
