@@ -13,7 +13,6 @@ public class TutorialSession {
 
     private Step currentStep = Step.INTRO;
     private boolean active = false;
-    private boolean pendingSubGui = false;
     private Zombie duelBot;
 
     private double demoBalance = 1000.0;
@@ -36,8 +35,6 @@ public class TutorialSession {
     public void setStep(Step step) { this.currentStep = step; }
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
-    public boolean isPendingSubGui() { return pendingSubGui; }
-    public void setPendingSubGui(boolean v) { this.pendingSubGui = v; }
 
     public double getDemoBalance() { return demoBalance; }
     public void setDemoBalance(double v) { this.demoBalance = v; }
@@ -54,7 +51,6 @@ public class TutorialSession {
         this.demoBalance = 1000.0;
         this.shopDone = false;
         this.duelDone = false;
-        this.pendingSubGui = false;
         if (duelBot != null && duelBot.isValid()) duelBot.remove();
         this.duelBot = null;
     }

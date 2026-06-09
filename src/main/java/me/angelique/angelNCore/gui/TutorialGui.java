@@ -13,7 +13,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
 
@@ -228,15 +227,14 @@ public final class TutorialGui {
         var step = s.getStep();
 
         if (slot == 31) {
-            s.setPendingSubGui(true);
-            player.closeInventory();
+            AngelNCore pl = AngelNCore.getInstance();
             switch (step) {
-                case HUB -> scheduleCommand(player, "menu");
-                case CLAIM -> scheduleCommand(player, "claim");
-                case BOUNTY -> scheduleCommand(player, "wanted");
-                case STOCK -> scheduleCommand(player, "stock");
-                case BANK -> scheduleCommand(player, "bank");
-                case COSMETICS -> scheduleCommand(player, "cosmetics");
+                case HUB -> { player.closeInventory(); AngelHubGui.open(player); }
+                case CLAIM -> { player.closeInventory(); if (pl != null) ClaimGui.open(player, pl); }
+                case BOUNTY -> { player.closeInventory(); player.performCommand("wanted"); }
+                case STOCK -> { player.closeInventory(); if (pl != null) StockGui.open(player, pl, 0); }
+                case BANK -> { player.closeInventory(); if (pl != null) BankGui.open(player, pl); }
+                case COSMETICS -> { player.closeInventory(); player.performCommand("cosmetics"); }
                 case DUEL -> spawnBot(player, s);
                 case DONE -> { s.setActive(false); player.closeInventory(); }
                 default -> {}
@@ -246,11 +244,6 @@ public final class TutorialGui {
         if (step == TutorialSession.Step.SHOP && slot >= 19 && slot <= 25) {
             handleShopBuy(player, slot);
         }
-    }
-
-    private static void scheduleCommand(Player player, String cmd) {
-        new BukkitRunnable() { @Override public void run() { player.performCommand(cmd); } }
-                .runTaskLater(AngelNCore.getInstance(), 2L);
     }
 
     // --- Shop ---

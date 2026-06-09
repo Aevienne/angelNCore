@@ -77,17 +77,16 @@ public class MenuListener implements Listener {
         if (!(event.getPlayer() instanceof Player player)) return;
         TutorialSession s = TutorialSession.get(player);
         if (!s.isActive()) return;
-        // If we just opened a sub-GUI, skip (the command handler will open it next tick)
-        if (s.isPendingSubGui()) { s.setPendingSubGui(false); return; }
-        // Player closed something while in tutorial mode - reopen tutorial after a tick
+        String title = event.getView().getTitle();
+        // Ignore tutorial's own inventory closes (navigation, sub-GUI open)
+        if (title.equals(TutorialGui.TITLE) || title.equals(TutorialGui.SIM_TITLE)) return;
+        // A non-tutorial GUI was closed while in tutorial mode — reopen tutorial
         new BukkitRunnable() {
             @Override
             public void run() {
-                if (s.isActive() && player.isOnline()) {
-                    TutorialGui.open(player);
-                }
+                if (s.isActive() && player.isOnline()) TutorialGui.open(player);
             }
-        }.runTaskLater(plugin, 3L);
+        }.runTaskLater(plugin, 2L);
     }
 
     @EventHandler
