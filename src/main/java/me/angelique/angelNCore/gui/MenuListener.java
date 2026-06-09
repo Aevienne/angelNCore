@@ -76,13 +76,18 @@ public class MenuListener implements Listener {
     public void onInventoryClose(InventoryCloseEvent event) {
         if (!(event.getPlayer() instanceof Player player)) return;
         TutorialSession s = TutorialSession.get(player);
-        if (!s.isActive() || !s.isSubGuiOpen()) return;
-        s.setSubGuiOpen(false);
-        BukkitRunnable task = new BukkitRunnable() {
+        if (!s.isActive()) return;
+        // If we just opened a sub-GUI, skip (the command handler will open it next tick)
+        if (s.isPendingSubGui()) { s.setPendingSubGui(false); return; }
+        // Player closed something while in tutorial mode - reopen tutorial after a tick
+        new BukkitRunnable() {
             @Override
-            public void run() { TutorialGui.open(player); }
-        };
-        task.runTaskLater(plugin, 2L);
+            public void run() {
+                if (s.isActive() && player.isOnline()) {
+                    TutorialGui.open(player);
+                }
+            }
+        }.runTaskLater(plugin, 3L);
     }
 
     @EventHandler
@@ -94,7 +99,7 @@ public class MenuListener implements Listener {
         if (!s.isActive() || s.getDuelBot() == null) return;
         if (zombie.equals(s.getDuelBot())) {
             s.setDuelBot(null);
-            s.setDuelCompleted(true);
+            s.setDuelDone(true);
             killer.sendMessage(TextUtil.color("&aDummy defeated! Click Next in the tutorial."));
         }
     }
@@ -272,17 +277,15 @@ public class MenuListener implements Listener {
         if (slot == 36) { TutorialGui.back(player); return; }
         if (slot == 44) { TutorialGui.advance(player); return; }
         if (slot == 31) { TutorialGui.doAction(player, slot); return; }
-        // Shop item slots (19-25) for demo shop
+        // Shop item slots in demo shop
         if (slot >= 19 && slot <= 25) { TutorialGui.doAction(player, slot); return; }
     }
 
     private void handleSimClick(Player player, InventoryClickEvent event) {
+        // Demo shop clicks: shop items in slots 19-25
         int slot = event.getSlot();
-        // Only used by demo shop currently
         if (slot == 40 || slot == 36 || slot == 44 || (slot >= 19 && slot <= 25)) {
-            TutorialGui.doAction(player, slot);
-            if (slot == 36) TutorialGui.back(player);
-            else if (slot == 44) TutorialGui.advance(player);
+            handleTutorialClick(player, event);
         }
     }
 
