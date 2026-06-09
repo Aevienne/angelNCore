@@ -57,10 +57,10 @@ public class MenuListener implements Listener {
 
     private void handleHubClick(Player player, int slot) {
         switch (slot) {
-            case 19 -> player.performCommand("shop");
+            case 19 -> ShopGui.open(player, plugin, 0);
             case 20 -> player.performCommand("market");
-            case 21 -> player.performCommand("bank");
-            case 22 -> player.performCommand("stock");
+            case 21 -> BankGui.open(player, plugin);
+            case 22 -> StockGui.open(player, plugin, 0);
             case 23 -> player.performCommand("route");
             case 24 -> player.performCommand("company");
             case 25 -> player.performCommand("auction");
@@ -70,7 +70,7 @@ public class MenuListener implements Listener {
             case 31 -> player.performCommand("factory");
             case 32 -> player.performCommand("season");
             case 33 -> player.performCommand("sustenance");
-            case 34 -> player.performCommand("claim");
+            case 34 -> ClaimGui.open(player, plugin);
             case 49 -> player.closeInventory();
         }
     }
