@@ -41,6 +41,10 @@ commands:
     description: Open the Angel Network hub menu
     usage: /menu
     aliases: [angel, hub, am]
+  tutorial:
+    description: Guided tutorial through all server features
+    usage: /tutorial
+    aliases: [guide, learn]
   backup:
     description: Backup the economy database
     usage: /backup

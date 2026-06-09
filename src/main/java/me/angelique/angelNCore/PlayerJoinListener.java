@@ -75,7 +75,8 @@ public class PlayerJoinListener implements Listener {
             "&6================================\n" +
             "&7A player-driven economy where every\n" +
             "&7action shapes the world.\n\n" +
-            "&eOpen &f/menu &eto get started\n" +
+            "&eOpen &f/tutorial &efor a guided tour\n" +
+            "&eor &f/menu &eto get started\n" +
             "&7The hub has everything you need.\n\n" +
             "&aClaim land &7- stand in a chunk, open &e/claim\n" +
             "&aShop &7- buy & sell items at &e/shop\n" +

@@ -53,6 +53,9 @@ public class MenuListener implements Listener {
         } else if (title.equals(ClaimGui.TITLE)) {
             event.setCancelled(true);
             handleClaimClick(player, event);
+        } else if (title.equals(TutorialGui.TITLE)) {
+            event.setCancelled(true);
+            handleTutorialClick(player, event);
         }
     }
 
@@ -221,6 +224,16 @@ public class MenuListener implements Listener {
         plugin.getEconomyManager().withdraw(player.getUniqueId(), cost);
         rs.claimChunk(player.getUniqueId(), world, cx, cz, RegionService.RegionType.DEFAULT);
         player.sendMessage(TextUtil.color("&aChunk claimed!"));
+    }
+
+    private void handleTutorialClick(Player player, InventoryClickEvent event) {
+        UUID id = player.getUniqueId();
+        int step = TutorialGui.tutorialStep.getOrDefault(id, 0);
+        int slot = event.getSlot();
+
+        if (slot == 40) { TutorialGui.tutorialStep.remove(id); player.closeInventory(); return; }
+        if (slot == 36) { TutorialGui.open(player, step - 1); return; }
+        if (slot == 44) { TutorialGui.open(player, step + 1); return; }
     }
 
     // --- Shop ---

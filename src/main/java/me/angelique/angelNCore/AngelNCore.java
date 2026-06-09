@@ -13,6 +13,7 @@ import me.angelique.angelNCore.commands.StockCommand;
 import me.angelique.angelNCore.commands.BackupCommand;
 import me.angelique.angelNCore.gui.MenuCommand;
 import me.angelique.angelNCore.gui.MenuListener;
+import me.angelique.angelNCore.gui.TutorialCommand;
 import me.angelique.angelNCore.database.DatabaseManager;
 import me.angelique.angelNCore.economy.EconomyManager;
 import me.angelique.angelNCore.economy.MarketManager;
@@ -101,6 +102,7 @@ public class AngelNCore extends JavaPlugin {
         getCommand("stock").setTabCompleter(new StockCommand());
         getCommand("backup").setExecutor(new BackupCommand(this));
         getCommand("menu").setExecutor(new MenuCommand());
+        getCommand("tutorial").setExecutor(new TutorialCommand());
 
         getServer().getPluginManager().registerEvents(new MenuListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
