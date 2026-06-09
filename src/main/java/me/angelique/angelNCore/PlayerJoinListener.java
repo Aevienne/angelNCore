@@ -73,22 +73,16 @@ public class PlayerJoinListener implements Listener {
             "&6================================\n" +
             "&6  Welcome to &eAngelNetwork&6!\n" +
             "&6================================\n" +
-            "&7You are entering a player-driven economy.\n" +
-            "&7Every action affects supply, demand, and prices.\n\n" +
-            "&e6 Roles to play:\n" +
-            "  &aProducer &7- Farm, mine, gather raw goods\n" +
-            "  &6Industrialist &7- Run factories, process materials\n" +
-            "  &bLogistics &7- Transport goods between regions\n" +
-            "  &cMercenary &7- Bounty hunting, escort contracts\n" +
-            "  &5Regional Power &7- Control land, tax production\n" +
-            "  &dFinancial &7- Trade stocks, lend currency\n\n" +
-            "&7Commands:\n" +
-            "  &e/shop &7| &e/balance &7| &e/claim &7| &e/contract\n" +
-            "  &e/stock &7| &e/bank &7| &e/market &7| &e/auction\n" +
-            "  &e/company &7| &e/factory &7| &e/route &7| &e/duel\n" +
-            "  &e/season &7| &e/sustenance\n\n" +
-            "&aYou have a free land claim! Use &e/claim claim &ato start.\n" +
-            "&bWeb: &fhttp://127.0.0.1:8080/app/ &7(Stock Exchange)"
+            "&7A player-driven economy where every\n" +
+            "&7action shapes the world.\n\n" +
+            "&eOpen &f/menu &eto get started\n" +
+            "&7The hub has everything you need.\n\n" +
+            "&aClaim land &7- stand in a chunk, open &e/claim\n" +
+            "&aShop &7- buy & sell items at &e/shop\n" +
+            "&aCompanies &7- form one at &e/company\n" +
+            "&aDuels &7- fight for honor at &e/challenge\n" +
+            "&aBounties &7- hunt wanted players at &e/wanted\n\n" +
+            "&bWeb: &fhttp://127.0.0.1:8080/app/"
         ));
 
         // Grant free claim

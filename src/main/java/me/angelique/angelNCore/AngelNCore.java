@@ -22,6 +22,7 @@ import me.angelique.angelNCore.listeners.PlayerJoinListener;
 import me.angelique.angelNCore.listeners.StockEventListener;
 import me.angelique.angelNCore.listeners.MilitaryDietListener;
 import me.angelique.angelNCore.listeners.CrossListingListener;
+import me.angelique.angelNCore.listeners.TerritoryListener;
 import me.angelique.angelNCore.services.CompanyService;
 import me.angelique.angelNCore.services.*;
 import me.angelique.angelNCore.services.impl.*;
@@ -106,6 +107,7 @@ public class AngelNCore extends JavaPlugin {
         getServer().getPluginManager().registerEvents(stockListener, this);
         getServer().getPluginManager().registerEvents(new MilitaryDietListener(), this);
         getServer().getPluginManager().registerEvents(new CrossListingListener(crossListing), this);
+        getServer().getPluginManager().registerEvents(new TerritoryListener(this), this);
 
         stockApi = new StockApiServer(this, stockExchange);
         ((StockExchangeServiceImpl) stockExchange).setApiServer(stockApi);

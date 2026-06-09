@@ -100,8 +100,7 @@ public final class AngelHubGui {
 
         // Navigation bar (row 5)
         inv.setItem(45, icon(Material.OAK_SIGN, "&eWelcome, &f" + player.getName(),
-                "&7Angel Network Economy",
-                "&7Phase 1: Survival"));
+                "&7Angel Network Economy"));
         inv.setItem(49, icon(Material.BARRIER, "&cClose", "&7Click to close menu"));
         inv.setItem(53, icon(Material.KNOWLEDGE_BOOK, "&bAngel Network",
                 "&7v1.0: Player-driven economy",
