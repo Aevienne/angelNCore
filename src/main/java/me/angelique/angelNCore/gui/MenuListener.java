@@ -4,7 +4,6 @@ import me.angelique.angelNCore.AngelNCore;
 import me.angelique.angelNCore.economy.MarketManager;
 import me.angelique.angelNCore.services.BankService;
 import me.angelique.angelNCore.services.RegionService;
-import me.angelique.angelNCore.services.RegionService.RegionType;
 import me.angelique.angelNCore.services.ServiceRegistry;
 import me.angelique.angelNCore.services.StockExchangeService;
 import me.angelique.angelNCore.services.StockExchangeService.CompanyInfo;
@@ -194,40 +193,34 @@ public class MenuListener implements Listener {
         int cx = chunk.getX(), cz = chunk.getZ();
 
         if (slot == 40) { AngelHubGui.open(player); return; }
-        if (slot == 21) { doClaim(player, rs, world, cx, cz, null); return; }
         if (slot == 22) {
-            if (event.isShiftClick()) {
+            var owner = rs.getChunkOwner(world, cx, cz);
+            if (owner != null && owner.equals(player.getUniqueId())) {
                 boolean ok = rs.releaseChunk(player.getUniqueId(), world, cx, cz);
-                player.sendMessage(TextUtil.color(ok ? "&aChunk released." : "&cNot your chunk."));
+                player.sendMessage(TextUtil.color(ok ? "&aChunk released." : "&cFailed to release."));
             } else {
-                doClaim(player, rs, world, cx, cz, RegionType.FERTILE);
+                doClaim(player, rs, world, cx, cz);
             }
-            return;
+            ClaimGui.open(player, plugin);
         }
-        if (slot == 23) { doClaim(player, rs, world, cx, cz, RegionType.MINING); return; }
-        if (slot == 24) { doClaim(player, rs, world, cx, cz, RegionType.FUEL); return; }
     }
 
-    private void doClaim(Player player, RegionService rs, String world, int cx, int cz, RegionType type) {
+    private void doClaim(Player player, RegionService rs, String world, int cx, int cz) {
         if (rs == null) return;
         if (rs.getChunkOwner(world, cx, cz) != null) {
-            player.sendMessage(TextUtil.color("&cAlready claimed."));
-            return;
+            player.sendMessage(TextUtil.color("&cAlready claimed.")); return;
         }
         int max = plugin.getConfig().getInt("land.max-claims", 10);
         if (rs.getClaimCount(player.getUniqueId()) >= max) {
-            player.sendMessage(TextUtil.color("&cClaim limit reached (" + max + ")."));
-            return;
+            player.sendMessage(TextUtil.color("&cClaim limit reached (" + max + ").")); return;
         }
         double cost = plugin.getConfig().getDouble("land.claim-cost", 100.0);
         if (!plugin.getEconomyManager().has(player.getUniqueId(), cost)) {
-            player.sendMessage(TextUtil.color("&cNeed $" + String.format("%.2f", cost)));
-            return;
+            player.sendMessage(TextUtil.color("&cNeed $" + String.format("%.2f", cost))); return;
         }
         plugin.getEconomyManager().withdraw(player.getUniqueId(), cost);
-        rs.claimChunk(player.getUniqueId(), world, cx, cz, type != null ? type : RegionType.DEFAULT);
-        player.sendMessage(TextUtil.color("&aChunk claimed! Type: " + (type != null ? type : "DEFAULT")));
-        ClaimGui.open(player, plugin);
+        rs.claimChunk(player.getUniqueId(), world, cx, cz, RegionService.RegionType.DEFAULT);
+        player.sendMessage(TextUtil.color("&aChunk claimed!"));
     }
 
     // --- Shop ---

@@ -31,38 +31,41 @@ public final class ClaimGui {
         fillBorder(inv);
 
         inv.setItem(4, item(Material.OAK_FENCE_GATE, "&2Land Claims",
-                "&7Chunk: &f" + cx + ", " + cz + " (" + world + ")"));
+                "&7Standing in chunk &f" + cx + ", " + cz));
 
-        // Current chunk info
         var owner = rs != null ? rs.getChunkOwner(world, cx, cz) : null;
-        var type = rs != null ? rs.getRegionType(world, cx, cz) : RegionService.RegionType.DEFAULT;
         boolean owned = owner != null;
         boolean mine = owned && owner.equals(player.getUniqueId());
 
-        inv.setItem(13, item(owned ? Material.GRASS_BLOCK : Material.DIRT,
-                owned ? "&aClaimed" : "&7Unclaimed",
-                "&7Type: &f" + type,
-                "&7Owner: &f" + (owned ? owner.toString().substring(0, 8) : "None")));
-
         if (!owned) {
-            inv.setItem(21, item(Material.EMERALD, "&aClaim This Chunk",
-                    "&7Cost: $" + String.format("%.2f", plugin.getConfig().getDouble("land.claim-cost", 100.0)),
-                    "&7Limit: " + (rs != null ? rs.getClaimCount(player.getUniqueId()) : 0) + "/" + plugin.getConfig().getInt("land.max-claims", 10),
+            double cost = plugin.getConfig().getDouble("land.claim-cost", 100.0);
+            int myClaims = rs != null ? rs.getClaimCount(player.getUniqueId()) : 0;
+            int max = plugin.getConfig().getInt("land.max-claims", 10);
+
+            inv.setItem(13, item(Material.GRASS_BLOCK, "&aAvailable",
+                    "&7Cost: &f$" + String.format("%.2f", cost),
+                    "&7Your claims: &f" + myClaims + " / " + max,
+                    "",
+                    "&eClick Claim to take this chunk"));
+
+            inv.setItem(22, item(Material.EMERALD, "&aClaim",
+                    "&7Pay $" + String.format("%.2f", cost),
+                    "&7to own this chunk",
                     "",
                     "&eClick to claim"));
-            inv.setItem(22, item(Material.GOLD_INGOT, "&eClaim as FERTILE", "&7Best for farming"));
-            inv.setItem(23, item(Material.IRON_PICKAXE, "&7Claim as MINING", "&7Best for mining"));
-            inv.setItem(24, item(Material.COAL, "&8Claim as FUEL", "&7Best for energy"));
         } else if (mine) {
-            inv.setItem(22, item(Material.BARRIER, "&cRelease Claim",
-                    "&7Give up ownership of this chunk",
+            inv.setItem(13, item(Material.GRASS_BLOCK, "&aYour Territory",
+                    "&7You own this chunk"));
+
+            inv.setItem(22, item(Material.BARRIER, "&cRelease",
+                    "&7Give up ownership",
                     "",
-                    "&eShift+Click to release"));
+                    "&eClick to release"));
         } else {
-            inv.setItem(22, item(Material.BARRIER, "&cClaimed by another player"));
+            inv.setItem(13, item(Material.BEDROCK, "&cClaimed",
+                    "&7Owned by: &f" + owner.toString().substring(0, 8)));
         }
 
-        // My claims list
         if (rs != null) {
             var claims = rs.getPlayerClaims(player.getUniqueId());
             inv.setItem(31, item(Material.BOOK, "&eMy Claims: &f" + claims.size(),
@@ -70,7 +73,6 @@ public final class ClaimGui {
         }
 
         inv.setItem(40, item(Material.OAK_DOOR, "&cBack to Hub"));
-
         player.openInventory(inv);
     }
 
