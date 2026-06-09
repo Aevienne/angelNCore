@@ -26,6 +26,7 @@ public class TutorialSession {
     private boolean bountyCompleted = false;
     private boolean stockCompleted = false;
     private boolean bankCompleted = false;
+    private boolean subGuiOpen = false;
 
     private static final Map<UUID, TutorialSession> sessions = new HashMap<>();
 
@@ -70,6 +71,8 @@ public class TutorialSession {
     public void setStockCompleted(boolean v) { this.stockCompleted = v; }
     public boolean isBankCompleted() { return bankCompleted; }
     public void setBankCompleted(boolean v) { this.bankCompleted = v; }
+    public boolean isSubGuiOpen() { return subGuiOpen; }
+    public void setSubGuiOpen(boolean v) { this.subGuiOpen = v; }
 
     public void addCompleted(String action) { completedActions.add(action); }
     public List<String> getCompleted() { return completedActions; }

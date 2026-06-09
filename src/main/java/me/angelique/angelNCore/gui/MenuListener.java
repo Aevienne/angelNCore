@@ -18,6 +18,7 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
 
@@ -69,6 +70,19 @@ public class MenuListener implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         TutorialSession.remove(event.getPlayer());
+    }
+
+    @EventHandler
+    public void onInventoryClose(InventoryCloseEvent event) {
+        if (!(event.getPlayer() instanceof Player player)) return;
+        TutorialSession s = TutorialSession.get(player);
+        if (!s.isActive() || !s.isSubGuiOpen()) return;
+        s.setSubGuiOpen(false);
+        BukkitRunnable task = new BukkitRunnable() {
+            @Override
+            public void run() { TutorialGui.open(player); }
+        };
+        task.runTaskLater(plugin, 2L);
     }
 
     @EventHandler

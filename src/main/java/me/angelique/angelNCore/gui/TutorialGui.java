@@ -24,9 +24,19 @@ public final class TutorialGui {
 
     public static void open(Player player) {
         TutorialSession s = TutorialSession.get(player);
+        if (s.getStep() == TutorialSession.Step.DONE) {
+            s.setStep(TutorialSession.Step.INTRO);
+            s.setDemoBalance(1000);
+            s.setShopCompleted(false);
+            s.setClaimCompleted(false);
+            s.setDuelCompleted(false);
+            s.setBountyCompleted(false);
+            s.setStockCompleted(false);
+            s.setBankCompleted(false);
+            if (s.getDuelBot() != null && s.getDuelBot().isValid()) s.getDuelBot().remove();
+        }
         s.setActive(true);
-        int stepIdx = Math.max(0, s.getStep().ordinal());
-        showStep(player, stepIdx);
+        showStep(player, s.getStep().ordinal());
     }
 
     public static void resume(Player player) {
@@ -289,9 +299,9 @@ public final class TutorialGui {
 
         switch (s.getStep()) {
             case INTRO, COSMETICS, DONE -> {}
-            case HUB -> { if (slot == 31) { player.closeInventory(); player.performCommand("menu"); } }
+            case HUB -> { if (slot == 31) { player.closeInventory(); s.setSubGuiOpen(true); player.performCommand("menu"); } }
             case SHOP -> { if (slot >= 19 && slot <= 25) handleShopBuy(player, slot); }
-            case CLAIM -> { if (slot == 31 && !s.isClaimCompleted()) { s.setClaimCompleted(true); player.performCommand("claim"); } }
+            case CLAIM -> { if (slot == 31 && !s.isClaimCompleted()) { s.setClaimCompleted(true); s.setSubGuiOpen(true); player.performCommand("claim"); } }
             case DUEL -> {
                 if (slot == 31) {
                     if (s.getDuelBot() == null || !s.getDuelBot().isValid()) {
@@ -299,9 +309,9 @@ public final class TutorialGui {
                     }
                 }
             }
-            case BOUNTY -> { if (slot == 31) player.performCommand("wanted"); }
-            case STOCK -> { if (slot == 31) player.performCommand("stock"); }
-            case BANK -> { if (slot == 31) player.performCommand("bank"); }
+            case BOUNTY -> { if (slot == 31) { s.setSubGuiOpen(true); player.performCommand("wanted"); } }
+            case STOCK -> { if (slot == 31) { s.setSubGuiOpen(true); player.performCommand("stock"); } }
+            case BANK -> { if (slot == 31) { s.setSubGuiOpen(true); player.performCommand("bank"); } }
         }
     }
 
@@ -327,6 +337,8 @@ public final class TutorialGui {
     // --- Shop buy handler ---
     private static void handleShopBuy(Player player, int slot) {
         TutorialSession s = TutorialSession.get(player);
+        if (s.isShopCompleted()) { player.sendMessage(TextUtil.color("&cShop demo complete. Click Next to continue.")); return; }
+
         String[] items = {"BREAD", "COOKED_BEEF", "IRON_INGOT", "DIAMOND", "OAK_LOG", "ARROW", "LEATHER"};
         double[] prices = {5.0, 12.0, 25.0, 100.0, 3.0, 1.0, 8.0};
         int idx = slot - 19;
@@ -339,10 +351,8 @@ public final class TutorialGui {
         Material mat = Material.getMaterial(items[idx]);
         if (mat != null) player.getInventory().addItem(new ItemStack(mat, 1));
 
-        if (!s.isShopCompleted()) {
-            s.setShopCompleted(true);
-            player.sendMessage(TextUtil.color("&aBought " + items[idx] + "! Step complete. Click Next."));
-        }
+        s.setShopCompleted(true);
+        player.sendMessage(TextUtil.color("&aBought " + items[idx] + "! Step complete. Click Next."));
         showShopDemo(player);
     }
 
