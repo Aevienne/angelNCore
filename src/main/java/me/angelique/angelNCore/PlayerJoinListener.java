@@ -3,6 +3,7 @@ package me.angelique.angelNCore.listeners;
 import me.angelique.angelNCore.AngelNCore;
 import me.angelique.angelNCore.services.RegionService;
 import me.angelique.angelNCore.services.ServiceRegistry;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -10,6 +11,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.scoreboard.*;
 
 public class PlayerJoinListener implements Listener {
 
@@ -23,11 +25,38 @@ public class PlayerJoinListener implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         plugin.getEconomyManager().initPlayer(player);
+        setupScoreboard(player);
 
         if (!player.hasPlayedBefore()) {
             giveStarterKit(player);
             showOnboarding(player);
         }
+    }
+
+    private void setupScoreboard(Player player) {
+        ScoreboardManager manager = Bukkit.getScoreboardManager();
+        if (manager == null) return;
+        Scoreboard board = manager.getNewScoreboard();
+        Objective obj = board.registerNewObjective("angelhub", "dummy",
+                ChatColor.translateAlternateColorCodes('&', "&6AngelNetwork"));
+        obj.setDisplaySlot(DisplaySlot.SIDEBAR);
+
+        int line = 8;
+        setLine(obj, line--, "&7");
+        setLine(obj, line--, "&6Balance");
+        setLine(obj, line--, "&f$" + String.format("%.2f", plugin.getEconomyManager().getBalance(player.getUniqueId())));
+        setLine(obj, line--, "&8");
+        setLine(obj, line--, "&7/menu for hub");
+        setLine(obj, line--, "&7/shop to trade");
+        setLine(obj, line--, "&0");
+        setLine(obj, line--, "&6angelNCore");
+
+        player.setScoreboard(board);
+    }
+
+    private void setLine(Objective obj, int score, String text) {
+        Score s = obj.getScore(ChatColor.translateAlternateColorCodes('&', text));
+        s.setScore(score);
     }
 
     private void giveStarterKit(Player player) {

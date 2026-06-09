@@ -3,6 +3,8 @@ package me.angelique.angelNCore.gui;
 import me.angelique.angelNCore.AngelNCore;
 import me.angelique.angelNCore.economy.MarketManager;
 import me.angelique.angelNCore.services.BankService;
+import me.angelique.angelNCore.services.RegionService;
+import me.angelique.angelNCore.services.RegionService.RegionType;
 import me.angelique.angelNCore.services.ServiceRegistry;
 import me.angelique.angelNCore.services.StockExchangeService;
 import me.angelique.angelNCore.services.StockExchangeService.CompanyInfo;
@@ -131,8 +133,8 @@ public class MenuListener implements Listener {
         UUID id = player.getUniqueId();
         int slot = event.getSlot();
 
-        if (slot == 47) { player.closeInventory(); player.chat("/stock portfolio"); return; }
-        if (slot == 49) { player.closeInventory(); player.chat("/stock token"); return; }
+        if (slot == 47) { player.closeInventory(); showPortfolio(player); return; }
+        if (slot == 49) { player.closeInventory(); showToken(player); return; }
         if (slot == 51) { AngelHubGui.open(player); return; }
         if (slot == 45) { stockPages.put(id, Math.max(0, stockPages.getOrDefault(id, 0) - 1)); StockGui.open(player, plugin, stockPages.get(id)); return; }
         if (slot == 53) { stockPages.put(id, stockPages.getOrDefault(id, 0) + 1); StockGui.open(player, plugin, stockPages.get(id)); return; }
@@ -186,14 +188,46 @@ public class MenuListener implements Listener {
     // --- Claim ---
     private void handleClaimClick(Player player, InventoryClickEvent event) {
         int slot = event.getSlot();
-        if (slot == 21) { player.closeInventory(); player.chat("/claim claim"); }
-        else if (slot == 22) {
-            if (event.isShiftClick()) { player.closeInventory(); player.chat("/claim release"); }
-            else { player.closeInventory(); player.chat("/claim claim FERTILE"); }
+        RegionService rs = ServiceRegistry.getRegionService();
+        var chunk = player.getLocation().getChunk();
+        String world = chunk.getWorld().getName();
+        int cx = chunk.getX(), cz = chunk.getZ();
+
+        if (slot == 40) { AngelHubGui.open(player); return; }
+        if (slot == 21) { doClaim(player, rs, world, cx, cz, null); return; }
+        if (slot == 22) {
+            if (event.isShiftClick()) {
+                boolean ok = rs.releaseChunk(player.getUniqueId(), world, cx, cz);
+                player.sendMessage(TextUtil.color(ok ? "&aChunk released." : "&cNot your chunk."));
+            } else {
+                doClaim(player, rs, world, cx, cz, RegionType.FERTILE);
+            }
+            return;
         }
-        else if (slot == 23) { player.closeInventory(); player.chat("/claim claim MINING"); }
-        else if (slot == 24) { player.closeInventory(); player.chat("/claim claim FUEL"); }
-        else if (slot == 40) { AngelHubGui.open(player); }
+        if (slot == 23) { doClaim(player, rs, world, cx, cz, RegionType.MINING); return; }
+        if (slot == 24) { doClaim(player, rs, world, cx, cz, RegionType.FUEL); return; }
+    }
+
+    private void doClaim(Player player, RegionService rs, String world, int cx, int cz, RegionType type) {
+        if (rs == null) return;
+        if (rs.getChunkOwner(world, cx, cz) != null) {
+            player.sendMessage(TextUtil.color("&cAlready claimed."));
+            return;
+        }
+        int max = plugin.getConfig().getInt("land.max-claims", 10);
+        if (rs.getClaimCount(player.getUniqueId()) >= max) {
+            player.sendMessage(TextUtil.color("&cClaim limit reached (" + max + ")."));
+            return;
+        }
+        double cost = plugin.getConfig().getDouble("land.claim-cost", 100.0);
+        if (!plugin.getEconomyManager().has(player.getUniqueId(), cost)) {
+            player.sendMessage(TextUtil.color("&cNeed $" + String.format("%.2f", cost)));
+            return;
+        }
+        plugin.getEconomyManager().withdraw(player.getUniqueId(), cost);
+        rs.claimChunk(player.getUniqueId(), world, cx, cz, type != null ? type : RegionType.DEFAULT);
+        player.sendMessage(TextUtil.color("&aChunk claimed! Type: " + (type != null ? type : "DEFAULT")));
+        ClaimGui.open(player, plugin);
     }
 
     // --- Shop ---
@@ -245,5 +279,37 @@ public class MenuListener implements Listener {
         int[] slots = {10,11,12,13,14,15,16, 19,20,21,22,23,24,25, 28,29,30,31,32,33,34, 37,38,39,40,41,42,43};
         for (int i = 0; i < slots.length; i++) if (slots[i] == slot) return i;
         return -1;
+    }
+
+    private void showPortfolio(Player player) {
+        StockExchangeService ex = ServiceRegistry.getStockExchangeService();
+        if (ex == null) return;
+        double total = 0;
+        boolean hasAny = false;
+        player.sendMessage(TextUtil.color("&6Your Portfolio:"));
+        for (CompanyInfo c : ex.listCompanies()) {
+            int shares = ex.getHolding(player.getUniqueId(), c.companyId());
+            if (shares > 0) {
+                double val = shares * c.currentPrice();
+                total += val;
+                hasAny = true;
+                player.sendMessage(TextUtil.color("&e" + c.name() + "&f: " + shares + " shares &7(&a$" + String.format("%.2f", val) + "&7)"));
+            }
+        }
+        if (!hasAny) player.sendMessage(TextUtil.color("&7No shares owned."));
+        if (total > 0) player.sendMessage(TextUtil.color("&aTotal: &f$" + String.format("%.2f", total)));
+    }
+
+    private void showToken(Player player) {
+        StockExchangeService ex = ServiceRegistry.getStockExchangeService();
+        if (ex instanceof me.angelique.angelNCore.services.impl.StockExchangeServiceImpl se) {
+            String token = se.generateToken(player.getUniqueId());
+            if (!token.isEmpty()) {
+                player.sendMessage(TextUtil.color("&aWeb token: &f" + token));
+                player.sendMessage(TextUtil.color("&7Go to &bhttp://127.0.0.1:8080/app/"));
+            } else {
+                player.sendMessage(TextUtil.color("&cFailed to generate token."));
+            }
+        }
     }
 }
