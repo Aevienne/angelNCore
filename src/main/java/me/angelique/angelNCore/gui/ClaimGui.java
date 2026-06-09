@@ -16,7 +16,7 @@ import java.util.*;
 
 public final class ClaimGui {
 
-    public static final String TITLE = TextUtil.color("&8Land Claims &7\u2014 &2Territory");
+    public static final String TITLE = TextUtil.color("&2Territory");
     static final int SIZE = 45;
 
     private ClaimGui() {}

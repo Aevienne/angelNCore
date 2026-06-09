@@ -3,7 +3,6 @@ package me.angelique.angelNCore.gui;
 import me.angelique.angelNCore.AngelNCore;
 import me.angelique.angelNCore.economy.MarketManager;
 import me.angelique.angelNCore.services.BankService;
-import me.angelique.angelNCore.services.RegionService;
 import me.angelique.angelNCore.services.ServiceRegistry;
 import me.angelique.angelNCore.services.StockExchangeService;
 import me.angelique.angelNCore.services.StockExchangeService.CompanyInfo;
@@ -14,7 +13,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
 
@@ -39,6 +37,9 @@ public class MenuListener implements Listener {
         } else if (title.equals(ShopGui.TITLE)) {
             event.setCancelled(true);
             handleShopClick(player, event);
+        } else if (title.equals(ShopGui.DETAIL_TITLE)) {
+            event.setCancelled(true);
+            handleShopDetailClick(player, event);
         } else if (title.equals(BankGui.TITLE)) {
             event.setCancelled(true);
             handleBankClick(player, event);
@@ -223,19 +224,26 @@ public class MenuListener implements Listener {
         }
 
         String itemKey = type.name();
-        if (!market.isValidItem(itemKey)) return;
+        if (market.isValidItem(itemKey)) {
+            ShopGui.openDetail(player, plugin, itemKey);
+        }
+    }
 
-        boolean isShift = event.isShiftClick();
-        boolean isRight = event.isRightClick();
-        int amount = isShift ? 64 : 1;
+    private void handleShopDetailClick(Player player, InventoryClickEvent event) {
+        int slot = event.getSlot();
+        UUID id = player.getUniqueId();
+        String itemKey = ShopGui.selectedItem.get(id);
 
-        if (isRight) ShopGui.handleSell(player, plugin, itemKey, amount);
-        else ShopGui.handleBuy(player, plugin, itemKey, amount);
+        if (slot == 40) { ShopGui.open(player, plugin, shopPages.getOrDefault(id, 0)); return; }
 
-        new BukkitRunnable() {
-            @Override
-            public void run() { ShopGui.open(player, plugin, shopPages.getOrDefault(player.getUniqueId(), 0)); }
-        }.runTaskLater(plugin, 2L);
+        int[] buyAmounts = {1, 8, 16, 32, 64};
+        for (int i = 0; i < buyAmounts.length; i++) {
+            if (slot == 10 + i) { ShopGui.handleBuy(player, plugin, itemKey, buyAmounts[i]); ShopGui.openDetail(player, plugin, itemKey); return; }
+        }
+        int[] sellAmounts = {1, 8, 16, 32, 64};
+        for (int i = 0; i < sellAmounts.length; i++) {
+            if (slot == 28 + i) { ShopGui.handleSell(player, plugin, itemKey, sellAmounts[i]); ShopGui.openDetail(player, plugin, itemKey); return; }
+        }
     }
 
     private int slotIndex(int slot) {

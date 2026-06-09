@@ -16,8 +16,8 @@ import java.util.*;
 
 public final class StockGui {
 
-    public static final String TITLE = TextUtil.color("&8Stock Exchange &7\u2014 &bTrade Shares");
-    public static final String TRADE_TITLE = TextUtil.color("&8Stock Exchange &7\u2014 &bPlace Order");
+    public static final String TITLE = TextUtil.color("&bTrade Shares");
+    public static final String TRADE_TITLE = TextUtil.color("&bPlace Order");
     static final int SIZE = 54;
     static final int TRADE_SIZE = 36;
     private static final int[] ITEM_SLOTS = {10,11,12,13,14,15,16, 19,20,21,22,23,24,25, 28,29,30,31,32,33,34, 37,38,39,40,41,42,43};

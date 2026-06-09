@@ -15,7 +15,7 @@ import java.util.*;
 
 public final class BankGui {
 
-    public static final String TITLE = TextUtil.color("&8Bank &7\u2014 &eLoans & Repay");
+    public static final String TITLE = TextUtil.color("&eLoans & Repay");
     static final int SIZE = 45;
     private static final int[] LOAN_SLOTS = {19, 20, 21, 22, 23, 24, 25};
     private static final int[] BORROW_SLOTS = {28, 29, 30, 31, 32, 33, 34};
