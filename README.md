@@ -1,17 +1,53 @@
 # angelNCore
 
-A Minecraft 1.21 plugin that adds a **supply and demand economy** to your server. Item prices shift dynamically based on player activity buying drives prices up, selling drives them down, and prices slowly recover over time.
+Core infrastructure plugin for the AngelNetwork ecosystem. Provides the shared event bus, service layer, database access, and economy backbone that all other Angel plugins depend on.
 
 ---
 
-## Features
+## Architecture
 
-- Dynamic pricing driven by real player transactions
-- Persistent economy data stored in SQLite
-- Buy and sell items through a simple shop command
-- Prices decay back toward base value over time (self-correcting market)
-- Admin commands for managing player balances
-- Fully configurable items, prices, and market behavior via `config.yml`
+angelNCore is the **single required dependency** for every Angel plugin. All cross-plugin communication flows through its typed event bus — plugins publish events; other plugins subscribe. No direct plugin-to-plugin calls.
+
+```
+angelNCore (no deps)
+├── EventBus           — typed Bukkit event system (publish/subscribe)
+├── ServiceRegistry    — static service locator for 9 domain services
+├── DatabaseManager    — centralized SQLite/MySQL data layer
+├── EconomyManager     — player balances, deposits, withdrawals
+├── MarketManager      — supply/demand price engine
+├── BankService        — loans, interest, debt tracking
+├── RegionService      — land claims and territory control
+├── CompanyService     — company formation and governance
+├── StockExchangeService — stock trading + HTTP API
+├── NutritionService   — player diet tracking
+├── MilitaryService    — war declarations, faction modifiers
+├── LogisticsService   — trade route tracking
+└── CrossListingService — cross-plugin item lookups
+```
+
+---
+
+## Events (Cross-Plugin Communication)
+
+All events extend `AngelNetworkEvent`. Published via `EventBus.publish()` — consumed by subscribing plugins with standard `@EventHandler`.
+
+| Event | Publisher | Consumer(s) |
+|---|---|---|
+| `AuctionSaleEvent` | actualAuction | MarketService |
+| `BountyCompletedEvent` | angelBounty | ReputationService, AuditService |
+| `CompanyIPOEvent` | CompanyService | Stock Exchange API |
+| `ContractBreachedEvent` | angelTrade | ReputationService, angelBounty |
+| `DuelCompletedEvent` | angelDuel | ReputationService |
+| `FactoryDamagedEvent` | angelCreate | MilitaryService, CompanyService |
+| `FactoryRepairedEvent` | angelCreate | MilitaryService, CompanyService |
+| `ItemProducedEvent` | angelCreate | MarketService, CompanyService |
+| `LandClaimChangedEvent` | RegionService | CompanyService, MarketService |
+| `PlayerDietChangedEvent` | angelSustenance | NutritionService, MilitaryService |
+| `SeasonChangedEvent` | angelSeason | angelSustenance, MarketService, RegionService |
+| `ShipmentInterceptedEvent` | angelTrade | MarketService, angelBounty |
+| `TradeCompletedEvent` | angelTrade | MarketService, ReputationService |
+| `WarDeclaredEvent` | angelNCore | MilitaryService, MarketService, Stock Exchange |
+| `WarEndedEvent` | angelNCore | MilitaryService, MarketService |
 
 ---
 
@@ -19,75 +55,36 @@ A Minecraft 1.21 plugin that adds a **supply and demand economy** to your server
 
 | Command | Description |
 |---|---|
-| `/shop list` | View all items and their current buy/sell prices |
-| `/shop buy <item> [amount]` | Buy items from the shop |
-| `/shop sell <item> [amount]` | Sell items from your inventory |
-| `/balance` | Check your own balance |
-| `/balance <player>` | Check another player's balance |
-| `/eco give <player> <amount>` | Give a player money (admin) |
-| `/eco take <player> <amount>` | Take money from a player (admin) |
-| `/eco set <player> <amount>` | Set a player's balance (admin) |
+| `/shop` | Dynamic shop with supply/demand pricing |
+| `/balance` | Check your balance |
+| `/eco give|take|set` | Admin economy management |
+| `/bank` | Banking interface (loans, deposits) |
+| `/market` | Market price listings |
+| `/stock` | Stock exchange trading |
+| `/claim` | Land claiming |
+| `/region` | Region management |
+| `/war` | War declarations |
+| `/menu` | Angular Hub GUI |
+| `/tutorial` | New player onboarding |
+| `/backup` | Admin database backup |
 
 ---
 
-## Permissions
+## Economy
 
-| Permission | Default | Description |
-|---|---|---|
-| `economy.use` | Everyone | Access to `/shop` and `/balance` |
-| `economy.admin` | OP | Access to `/eco` admin commands |
-
----
-
-## How the Economy Works
-
-Every buy and sell transaction affects the market price:
-
-- **Buying** increases the price by 5% per item purchased
-- **Selling** decreases the price by 5% per item sold
-- Prices are capped between **20%** and **500%** of the base price
-- Every 60 seconds, all prices nudge back toward their base value
-
-This means items that are heavily traded will fluctuate, and players can influence the market — or exploit it.
-
----
-
-## Configuration
-
-`config.yml` is generated on first run. Key settings:
-
-```yaml
-economy:
-  starting-balance: 500.0
-  currency-symbol: "$"
-
-shop:
-  price-change-rate: 0.05       # % price change per item transacted
-  min-price-multiplier: 0.2     # floor: 20% of base price
-  max-price-multiplier: 5.0     # ceiling: 500% of base price
-  price-decay-rate: 0.01        # how fast prices return to base
-  price-decay-interval: 60      # seconds between decay ticks
-```
-
-To add a new item, add an entry under `items:`:
-
-```yaml
-items:
-  OBSIDIAN:
-    base-price: 20.0
-    display-name: "Obsidian"
-```
-
-The item key must match a valid Bukkit `Material` name.
+Dynamic supply-and-demand pricing:
+- Buying drives prices up, selling drives them down
+- Prices decay toward base value over time
+- Capped between configurable floor and ceiling
+- All prices configured in `config.yml`
 
 ---
 
 ## Installation
 
-1. Drop the compiled `.jar` into your server's `plugins/` folder
-2. Start or reload your server
-3. Edit `plugins/angelNCore/config.yml` to customize items and settings
-4. Reload with `/reload confirm` or restart the server
+1. Build with `./gradlew jar`, drop into `plugins/`
+2. Start server — `config.yml` generates on first run
+3. All other Angel plugins soft-depend on this plugin; build it first
 
 ---
 
@@ -99,11 +96,10 @@ Requires Java 21 and Gradle.
 ./gradlew jar
 ```
 
-Output jar will be in `build/libs/`.
-
 ---
 
 ## Dependencies
 
-- [Spigot API 1.21](https://hub.spigotmc.org) — provided at runtime, not shaded
-- SQLite JDBC — bundled with Spigot, no extra dependencies needed
+- Paper API 1.21.11 — provided at runtime
+- Vault API — compile-only, for economy bridge
+- SQLite — bundled with Paper
